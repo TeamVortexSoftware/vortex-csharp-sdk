@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <PackageId>TeamVortexSoftware.VortexSDK</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Team Vortex Software</Authors>
+    <Company>Team Vortex Software</Company>
+    <Description>Vortex C# SDK for authentication and invitation management. Compatible with React providers and follows the same paradigms as other Vortex SDKs.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/teamvortexsoftware/vortex</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/teamvortexsoftware/vortex</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>vortex;authentication;invitations;jwt</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
