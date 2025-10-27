@@ -25,7 +25,8 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// Group information
+    /// Group information for JWT generation (input)
+    /// Supports both 'id' (legacy) and 'groupId' (preferred) for backward compatibility
     /// </summary>
     public class Group
     {
@@ -33,18 +34,67 @@ namespace TeamVortexSoftware.VortexSDK
         public string Type { get; set; } = string.Empty;
 
         [JsonPropertyName("id")]
-        public string Id { get; set; } = string.Empty;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Id { get; set; }
+
+        [JsonPropertyName("groupId")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? GroupId { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
         public Group() { }
 
-        public Group(string type, string id, string name)
+        public Group(string type, string name, string? id = null, string? groupId = null)
         {
             Type = type;
-            Id = id;
             Name = name;
+            Id = id;
+            GroupId = groupId;
+        }
+    }
+
+    /// <summary>
+    /// Invitation group from API responses
+    /// This matches the MemberGroups table structure from the API
+    /// </summary>
+    public class InvitationGroup
+    {
+        /// <summary>Vortex internal UUID</summary>
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+
+        /// <summary>Vortex account ID</summary>
+        [JsonPropertyName("accountId")]
+        public string AccountId { get; set; } = string.Empty;
+
+        /// <summary>Customer's group ID (the ID they provided to Vortex)</summary>
+        [JsonPropertyName("groupId")]
+        public string GroupId { get; set; } = string.Empty;
+
+        /// <summary>Group type (e.g., "workspace", "team")</summary>
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        /// <summary>Group name</summary>
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>ISO 8601 timestamp when the group was created</summary>
+        [JsonPropertyName("createdAt")]
+        public string CreatedAt { get; set; } = string.Empty;
+
+        public InvitationGroup() { }
+
+        public InvitationGroup(string id, string accountId, string groupId, string type, string name, string createdAt)
+        {
+            Id = id;
+            AccountId = accountId;
+            GroupId = groupId;
+            Type = type;
+            Name = name;
+            CreatedAt = createdAt;
         }
     }
 
@@ -146,7 +196,7 @@ namespace TeamVortexSoftware.VortexSDK
         public string ProjectId { get; set; } = string.Empty;
 
         [JsonPropertyName("groups")]
-        public List<Group> Groups { get; set; } = new();
+        public List<InvitationGroup> Groups { get; set; } = new();
 
         [JsonPropertyName("accepts")]
         public List<InvitationAcceptance> Accepts { get; set; } = new();
