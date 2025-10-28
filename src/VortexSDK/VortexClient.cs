@@ -101,7 +101,13 @@ namespace TeamVortexSoftware.VortexSDK
             {
                 userId,
                 identifiers = identifiers.Select(i => new { type = i.Type, value = i.Value }),
-                groups = groups.Select(g => new { type = g.Type, id = g.Id, name = g.Name }),
+                groups = groups.Select(g => new
+                {
+                    type = g.Type,
+                    id = g.Id,
+                    groupId = g.GroupId,
+                    name = g.Name
+                }),
                 role,
                 expires
             };

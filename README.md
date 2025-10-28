@@ -51,8 +51,8 @@ var identifiers = new List<Identifier>
 // Groups the user belongs to (specific to your product)
 var groups = new List<Group>
 {
-    new Group("workspace", "workspace-123", "My Workspace"),
-    new Group("document", "doc-456", "Project Plan")
+    new Group("workspace", "My Workspace", groupId: "workspace-123"),
+    new Group("document", "Project Plan", groupId: "doc-456")
 };
 
 // User role (if applicable)
@@ -95,7 +95,7 @@ public class VortexController : ControllerBase
 
         var groups = new List<Group>
         {
-            new Group("workspace", "ws-1", "Main Workspace")
+            new Group("workspace", "Main Workspace", groupId: "ws-1")
         };
 
         var jwt = _vortex.GenerateJwt(userId, identifiers, groups, "member");
@@ -134,7 +134,7 @@ public class MyService
         var jwt = _vortex.GenerateJwt(
             user.Id,
             new List<Identifier> { new("email", user.Email) },
-            user.Groups.Select(g => new Group(g.Type, g.Id, g.Name)).ToList(),
+            user.Groups.Select(g => new Group(g.Type, g.Name, groupId: g.Id)).ToList(),
             user.Role
         );
 
@@ -193,6 +193,44 @@ await vortex.DeleteInvitationsByGroupAsync("workspace", "workspace-123");
 
 ```csharp
 var result = await vortex.ReinviteAsync("invitation-id");
+```
+
+## Data Types
+
+### Group (Input for JWT Generation)
+
+When creating groups for JWT generation, use the `groupId` parameter (preferred) or `id` (legacy):
+
+```csharp
+// Preferred: Using groupId (named parameter)
+var group = new Group("workspace", "My Workspace", groupId: "workspace-123");
+
+// Legacy: Using id (for backward compatibility)
+var group = new Group("workspace", "My Workspace", id: "workspace-123");
+
+// Setting properties directly
+var group = new Group
+{
+    Type = "workspace",
+    Name = "My Workspace",
+    GroupId = "workspace-123"  // Preferred
+};
+```
+
+### InvitationGroup (API Response)
+
+When receiving invitation data from the API, groups include all fields:
+
+```csharp
+public class InvitationGroup
+{
+    public string Id { get; set; }         // Vortex internal UUID
+    public string AccountId { get; set; }  // Vortex account ID
+    public string GroupId { get; set; }    // Customer's group ID (your identifier)
+    public string Type { get; set; }       // Group type (e.g., "workspace", "team")
+    public string Name { get; set; }       // Group name
+    public string CreatedAt { get; set; }  // ISO 8601 timestamp
+}
 ```
 
 ## Requirements

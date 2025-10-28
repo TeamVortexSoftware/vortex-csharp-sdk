@@ -28,8 +28,8 @@ namespace VortexSDK.Examples
             };
             var groups = new List<Group>
             {
-                new Group("workspace", "ws-1", "Main Workspace"),
-                new Group("team", "team-1", "Engineering")
+                new Group("workspace", "Main Workspace", groupId: "ws-1"),
+                new Group("team", "Engineering", groupId: "team-1")
             };
             var role = "admin";
 
