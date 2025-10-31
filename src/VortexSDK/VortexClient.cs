@@ -77,7 +77,12 @@ namespace TeamVortexSoftware.VortexSDK
             {
                 throw new VortexException("Invalid UUID byte length");
             }
-            var id = new Guid(idBytes).ToString();
+            // Convert bytes to UUID string (big-endian byte order, matching Node.js)
+            var id = $"{BitConverter.ToString(idBytes, 0, 4).Replace("-", "").ToLower()}-" +
+                     $"{BitConverter.ToString(idBytes, 4, 2).Replace("-", "").ToLower()}-" +
+                     $"{BitConverter.ToString(idBytes, 6, 2).Replace("-", "").ToLower()}-" +
+                     $"{BitConverter.ToString(idBytes, 8, 2).Replace("-", "").ToLower()}-" +
+                     $"{BitConverter.ToString(idBytes, 10, 6).Replace("-", "").ToLower()}";
 
             var expires = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 3600; // 1 hour from now
 
@@ -97,10 +102,10 @@ namespace TeamVortexSoftware.VortexSDK
                 kid = id
             };
 
+            // Property order must match Node.js SDK for signature compatibility
             var payload = new
             {
                 userId,
-                identifiers = identifiers.Select(i => new { type = i.Type, value = i.Value }),
                 groups = groups.Select(g => new
                 {
                     type = g.Type,
@@ -109,7 +114,8 @@ namespace TeamVortexSoftware.VortexSDK
                     name = g.Name
                 }),
                 role,
-                expires
+                expires,
+                identifiers = identifiers.Select(i => new { type = i.Type, value = i.Value })
             };
 
             // Step 3: Base64URL encode header and payload
