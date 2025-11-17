@@ -5,6 +5,31 @@ using System.Text.Json.Serialization;
 namespace TeamVortexSoftware.VortexSDK
 {
     /// <summary>
+    /// User data for JWT generation
+    /// </summary>
+    public class User
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+
+        [JsonPropertyName("email")]
+        public string Email { get; set; } = string.Empty;
+
+        [JsonPropertyName("adminScopes")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<string>? AdminScopes { get; set; }
+
+        public User() { }
+
+        public User(string id, string email, List<string>? adminScopes = null)
+        {
+            Id = id;
+            Email = email;
+            AdminScopes = adminScopes;
+        }
+    }
+
+    /// <summary>
     /// Identifier for a user (email, sms, etc.)
     /// </summary>
     public class Identifier

@@ -41,19 +41,31 @@ namespace TeamVortexSoftware.VortexSDK
         }
 
         /// <summary>
-        /// Generate a JWT token for the given user data.
+        /// Generate a JWT token with the given user data and optional extra properties.
         /// This uses the same algorithm as the Node.js SDK to ensure complete compatibility with React providers.
+        ///
+        /// The user parameter should contain the user's ID, email, and optional admin scopes.
+        /// If adminScopes contains "autoJoin", the JWT will include userIsAutoJoinAdmin: true.
+        /// The extra parameter can contain additional properties to include in the JWT payload.
         /// </summary>
-        /// <param name="userId">Unique identifier for the user</param>
-        /// <param name="identifiers">List of identifier objects with Type and Value properties</param>
-        /// <param name="groups">List of group objects with Type, Id, and Name properties</param>
-        /// <param name="role">Optional user role</param>
+        /// <param name="user">User data containing ID, email, and optional admin scopes</param>
+        /// <param name="extra">Optional: Additional properties to include in the JWT payload</param>
         /// <returns>JWT token string</returns>
-        public string GenerateJwt(
-            string userId,
-            List<Identifier> identifiers,
-            List<Group> groups,
-            string? role = null)
+        /// <example>
+        /// <code>
+        /// var user = new User("user-123", "user@example.com", new List&lt;string&gt; { "autoJoin" });
+        /// var jwt = vortex.GenerateJwt(user, null);
+        ///
+        /// // With extra properties:
+        /// var extra = new Dictionary&lt;string, object&gt;
+        /// {
+        ///     { "role", "admin" },
+        ///     { "department", "Engineering" }
+        /// };
+        /// var jwt = vortex.GenerateJwt(user, extra);
+        /// </code>
+        /// </example>
+        public string GenerateJwt(User user, Dictionary<string, object>? extra = null)
         {
             // Parse API key: format is VRTX.base64encodedId.key
             var parts = _apiKey.Split('.');
@@ -102,25 +114,35 @@ namespace TeamVortexSoftware.VortexSDK
                 kid = id
             };
 
-            // Property order must match Node.js SDK for signature compatibility
-            var payload = new
+            // Build payload with required fields
+            var payload = new Dictionary<string, object>
             {
-                userId,
-                groups = groups.Select(g => new
-                {
-                    type = g.Type,
-                    id = g.Id,
-                    groupId = g.GroupId,
-                    name = g.Name
-                }),
-                role,
-                expires,
-                identifiers = identifiers.Select(i => new { type = i.Type, value = i.Value })
+                ["userId"] = user.Id,
+                ["userEmail"] = user.Email,
+                ["expires"] = expires
             };
+
+            // Add userIsAutoJoinAdmin if 'autoJoin' is in adminScopes
+            if (user.AdminScopes != null && user.AdminScopes.Contains("autoJoin"))
+            {
+                payload["userIsAutoJoinAdmin"] = true;
+            }
+
+            // Add any additional properties from extra
+            if (extra != null)
+            {
+                foreach (var kvp in extra)
+                {
+                    payload[kvp.Key] = kvp.Value;
+                }
+            }
 
             // Step 3: Base64URL encode header and payload
             var headerJson = JsonSerializer.Serialize(header);
-            var payloadJson = JsonSerializer.Serialize(payload);
+            var payloadJson = JsonSerializer.Serialize(payload, new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            });
 
             var headerB64 = Base64UrlEncode(Encoding.UTF8.GetBytes(headerJson));
             var payloadB64 = Base64UrlEncode(Encoding.UTF8.GetBytes(payloadJson));

@@ -19,29 +19,27 @@ namespace VortexSDK.Examples
 
             using var vortex = new VortexClient(apiKey);
 
-            // Example user data
-            var userId = "user-123";
-            var identifiers = new List<Identifier>
-            {
-                new Identifier("email", "user@example.com"),
-                new Identifier("sms", "18008675309")
-            };
-            var groups = new List<Group>
-            {
-                new Group("workspace", "Main Workspace", groupId: "ws-1"),
-                new Group("team", "Engineering", groupId: "team-1")
-            };
-            var role = "admin";
+            // Example 1: Generate JWT - simple usage
+            Console.WriteLine("=== JWT Generation Example ===");
+            var user = new User("user-123", "user@example.com", new List<string> { "autoJoin" });
+            var jwt1 = vortex.GenerateJwt(user);
+            Console.WriteLine($"Generated JWT: {jwt1}\n");
 
-            // Generate a JWT
-            Console.WriteLine("Generating JWT...");
-            var jwt = vortex.GenerateJwt(userId, identifiers, groups, role);
-            Console.WriteLine($"JWT: {jwt}\n");
+            // Example 2: Generate JWT with additional properties
+            Console.WriteLine("=== JWT Generation with Additional Properties ===");
+            var user2 = new User("user-456", "user@example.com");
+            var extra = new Dictionary<string, object>
+            {
+                { "role", "admin" },
+                { "department", "Engineering" }
+            };
+            var jwt2 = vortex.GenerateJwt(user2, extra);
+            Console.WriteLine($"Generated JWT with extra: {jwt2}\n");
 
-            // Example: Get invitations by target
+            // Example 3: Get invitations by target
             try
             {
-                Console.WriteLine("Fetching invitations by email...");
+                Console.WriteLine("=== Get Invitations by Target Example ===");
                 var invitations = await vortex.GetInvitationsByTargetAsync("email", "user@example.com");
                 Console.WriteLine($"Found {invitations.Count} invitations");
             }
@@ -49,6 +47,9 @@ namespace VortexSDK.Examples
             {
                 Console.WriteLine($"Error: {ex.Message}");
             }
+
+            Console.WriteLine("\n=== Example Complete ===");
+            Console.WriteLine("To use with real data, set VORTEX_API_KEY environment variable");
         }
     }
 }

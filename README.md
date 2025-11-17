@@ -32,34 +32,43 @@ Your API key is used to:
 
 The Vortex Widget requires a JWT to authenticate users. Here's how to generate one:
 
+#### Simple Usage
+
 ```csharp
 using TeamVortexSoftware.VortexSDK;
 
 // Initialize the Vortex client with your API key
 var vortex = new VortexClient(Environment.GetEnvironmentVariable("VORTEX_API_KEY"));
 
-// User ID from your system
-var userId = "users-id-in-my-system";
-
-// Identifiers associated with the user
-var identifiers = new List<Identifier>
-{
-    new Identifier("email", "user@example.com"),
-    new Identifier("sms", "18008675309")
-};
-
-// Groups the user belongs to (specific to your product)
-var groups = new List<Group>
-{
-    new Group("workspace", "My Workspace", groupId: "workspace-123"),
-    new Group("document", "Project Plan", groupId: "doc-456")
-};
-
-// User role (if applicable)
-var role = "admin";
+// Create a user object
+var user = new User("user-123", "user@example.com", new List<string> { "autoJoin" });
 
 // Generate the JWT
-var jwt = vortex.GenerateJwt(userId, identifiers, groups, role);
+var jwt = vortex.GenerateJwt(user);
+
+Console.WriteLine(jwt);
+```
+
+#### With Additional Properties
+
+```csharp
+using TeamVortexSoftware.VortexSDK;
+
+// Initialize the Vortex client with your API key
+var vortex = new VortexClient(Environment.GetEnvironmentVariable("VORTEX_API_KEY"));
+
+// Create a user object
+var user = new User("user-123", "user@example.com");
+
+// Optional: Add extra properties to the JWT payload
+var extra = new Dictionary<string, object>
+{
+    { "role", "admin" },
+    { "department", "Engineering" }
+};
+
+// Generate the JWT with extra properties
+var jwt = vortex.GenerateJwt(user, extra);
 
 Console.WriteLine(jwt);
 ```
@@ -87,18 +96,14 @@ public class VortexController : ControllerBase
     public IActionResult GetJwt()
     {
         var userId = User.Identity?.Name ?? "anonymous";
+        var userEmail = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "";
+        var isAdmin = User.IsInRole("Admin");
 
-        var identifiers = new List<Identifier>
-        {
-            new Identifier("email", User.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "")
-        };
+        // Create user object with admin scopes if applicable
+        var adminScopes = isAdmin ? new List<string> { "autoJoin" } : null;
+        var user = new User(userId, userEmail, adminScopes);
 
-        var groups = new List<Group>
-        {
-            new Group("workspace", "Main Workspace", groupId: "ws-1")
-        };
-
-        var jwt = _vortex.GenerateJwt(userId, identifiers, groups, "member");
+        var jwt = _vortex.GenerateJwt(user);
 
         return Ok(new { jwt });
     }
@@ -131,12 +136,10 @@ public class MyService
 
     public async Task<string> GenerateUserJwt(User user)
     {
-        var jwt = _vortex.GenerateJwt(
-            user.Id,
-            new List<Identifier> { new("email", user.Email) },
-            user.Groups.Select(g => new Group(g.Type, g.Name, groupId: g.Id)).ToList(),
-            user.Role
-        );
+        var adminScopes = user.IsAdmin ? new List<string> { "autoJoin" } : null;
+        var vortexUser = new User(user.Id, user.Email, adminScopes);
+
+        var jwt = _vortex.GenerateJwt(vortexUser);
 
         return jwt;
     }
@@ -197,24 +200,27 @@ var result = await vortex.ReinviteAsync("invitation-id");
 
 ## Data Types
 
-### Group (Input for JWT Generation)
-
-When creating groups for JWT generation, use the `groupId` parameter (preferred) or `id` (legacy):
+### User (JWT Generation)
 
 ```csharp
-// Preferred: Using groupId (named parameter)
-var group = new Group("workspace", "My Workspace", groupId: "workspace-123");
-
-// Legacy: Using id (for backward compatibility)
-var group = new Group("workspace", "My Workspace", id: "workspace-123");
-
-// Setting properties directly
-var group = new Group
+public class User
 {
-    Type = "workspace",
-    Name = "My Workspace",
-    GroupId = "workspace-123"  // Preferred
-};
+    public string Id { get; set; }              // User's unique identifier
+    public string Email { get; set; }           // User's email address
+    public List<string>? AdminScopes { get; set; }  // Optional admin scopes (e.g., "autoJoin")
+}
+```
+
+The `AdminScopes` property is optional. If it contains `"autoJoin"`, the JWT will include `userIsAutoJoinAdmin: true`.
+
+**Example:**
+
+```csharp
+// Simple user
+var user = new User("user-123", "user@example.com");
+
+// Admin user with autoJoin scope
+var adminUser = new User("admin-123", "admin@example.com", new List<string> { "autoJoin" });
 ```
 
 ### InvitationGroup (API Response)
@@ -247,7 +253,8 @@ The `VortexClient` implements `IDisposable`. Use it with a `using` statement whe
 ```csharp
 using (var vortex = new VortexClient(apiKey))
 {
-    var jwt = vortex.GenerateJwt(userId, identifiers, groups, role);
+    var user = new User(userId, userEmail, new List<string> { "autoJoin" });
+    var jwt = vortex.GenerateJwt(user);
     // Use jwt...
 }
 ```
