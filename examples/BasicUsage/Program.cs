@@ -22,18 +22,23 @@ namespace VortexSDK.Examples
             // Example 1: Generate JWT - simple usage
             Console.WriteLine("=== JWT Generation Example ===");
             var user = new User("user-123", "user@example.com", new List<string> { "autoJoin" });
-            var jwt1 = vortex.GenerateJwt(user);
+            var params1 = new Dictionary<string, object>
+            {
+                ["user"] = user
+            };
+            var jwt1 = vortex.GenerateJwt(params1);
             Console.WriteLine($"Generated JWT: {jwt1}\n");
 
             // Example 2: Generate JWT with additional properties
             Console.WriteLine("=== JWT Generation with Additional Properties ===");
             var user2 = new User("user-456", "user@example.com");
-            var extra = new Dictionary<string, object>
+            var params2 = new Dictionary<string, object>
             {
-                { "role", "admin" },
-                { "department", "Engineering" }
+                ["user"] = user2,
+                ["role"] = "admin",
+                ["department"] = "Engineering"
             };
-            var jwt2 = vortex.GenerateJwt(user2, extra);
+            var jwt2 = vortex.GenerateJwt(params2);
             Console.WriteLine($"Generated JWT with extra: {jwt2}\n");
 
             // Example 3: Get invitations by target

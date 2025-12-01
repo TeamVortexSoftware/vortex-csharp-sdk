@@ -41,32 +41,47 @@ namespace TeamVortexSoftware.VortexSDK
         }
 
         /// <summary>
-        /// Generate a JWT token with the given user data and optional extra properties.
+        /// Generate a JWT token matching the Node.js SDK pattern.
         /// This uses the same algorithm as the Node.js SDK to ensure complete compatibility with React providers.
         ///
-        /// The user parameter should contain the user's ID, email, and optional admin scopes.
-        /// If adminScopes contains "autoJoin", the JWT will include userIsAutoJoinAdmin: true.
-        /// The extra parameter can contain additional properties to include in the JWT payload.
+        /// The params dictionary must contain a "user" key with a User object.
+        /// Additional properties in the params dictionary will be included directly in the JWT payload.
+        /// If the user has adminScopes, the full array will be included in the JWT payload.
         /// </summary>
-        /// <param name="user">User data containing ID, email, and optional admin scopes</param>
-        /// <param name="extra">Optional: Additional properties to include in the JWT payload</param>
+        /// <param name="parameters">Dictionary containing "user" key with User object and optional additional properties</param>
         /// <returns>JWT token string</returns>
         /// <example>
         /// <code>
-        /// var user = new User("user-123", "user@example.com", new List&lt;string&gt; { "autoJoin" });
-        /// var jwt = vortex.GenerateJwt(user, null);
-        ///
-        /// // With extra properties:
-        /// var extra = new Dictionary&lt;string, object&gt;
+        /// // Simple usage:
+        /// var parameters1 = new Dictionary&lt;string, object&gt;
         /// {
-        ///     { "role", "admin" },
-        ///     { "department", "Engineering" }
+        ///     ["user"] = new User("user-123", "user@example.com", new List&lt;string&gt; { "autoJoin" })
         /// };
-        /// var jwt = vortex.GenerateJwt(user, extra);
+        /// var jwt = vortex.GenerateJwt(parameters1);
+        ///
+        /// // With additional properties:
+        /// var parameters2 = new Dictionary&lt;string, object&gt;
+        /// {
+        ///     ["user"] = new User("user-123", "user@example.com"),
+        ///     ["role"] = "admin",
+        ///     ["department"] = "Engineering"
+        /// };
+        /// var jwt = vortex.GenerateJwt(parameters2);
         /// </code>
         /// </example>
-        public string GenerateJwt(User user, Dictionary<string, object>? extra = null)
+        public string GenerateJwt(Dictionary<string, object> parameters)
         {
+            // Extract user from parameters
+            if (parameters == null || !parameters.ContainsKey("user"))
+            {
+                throw new VortexException("parameters must contain 'user' key");
+            }
+
+            if (parameters["user"] is not User user)
+            {
+                throw new VortexException("'user' must be a User object");
+            }
+
             // Parse API key: format is VRTX.base64encodedId.key
             var parts = _apiKey.Split('.');
             if (parts.Length != 3)
@@ -122,16 +137,16 @@ namespace TeamVortexSoftware.VortexSDK
                 ["expires"] = expires
             };
 
-            // Add userIsAutoJoinAdmin if 'autoJoin' is in adminScopes
-            if (user.AdminScopes != null && user.AdminScopes.Contains("autoJoin"))
+            // Add adminScopes if present
+            if (user.AdminScopes != null)
             {
-                payload["userIsAutoJoinAdmin"] = true;
+                payload["adminScopes"] = user.AdminScopes;
             }
 
-            // Add any additional properties from extra
-            if (extra != null)
+            // Add any additional properties from parameters (excluding 'user')
+            foreach (var kvp in parameters)
             {
-                foreach (var kvp in extra)
+                if (kvp.Key != "user")
                 {
                     payload[kvp.Key] = kvp.Value;
                 }

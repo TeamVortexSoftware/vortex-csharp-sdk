@@ -225,6 +225,12 @@ namespace TeamVortexSoftware.VortexSDK
 
         [JsonPropertyName("accepts")]
         public List<InvitationAcceptance> Accepts { get; set; } = new();
+
+        [JsonPropertyName("expired")]
+        public bool Expired { get; set; }
+
+        [JsonPropertyName("expires")]
+        public string? Expires { get; set; }
     }
 
     /// <summary>
