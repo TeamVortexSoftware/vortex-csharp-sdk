@@ -21,7 +21,7 @@ namespace VortexSDK.Examples
 
             // Example 1: Generate JWT - simple usage
             Console.WriteLine("=== JWT Generation Example ===");
-            var user = new User("user-123", "user@example.com", new List<string> { "autoJoin" });
+            var user = new User("user-123", "user@example.com", new List<string> { "autojoin" });
             var params1 = new Dictionary<string, object>
             {
                 ["user"] = user

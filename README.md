@@ -23,6 +23,7 @@ Install-Package TeamVortexSoftware.VortexSDK
 Once you have the SDK installed, [login](https://admin.vortexsoftware.com/signin) to Vortex and [create an API Key](https://admin.vortexsoftware.com/members/api-keys). Keep your API key safe! Vortex does not store the API key and it is not retrievable once it has been created.
 
 Your API key is used to:
+
 - Sign JWTs for use with the Vortex Widget
 - Make API calls against the [Vortex API](https://api.vortexsoftware.com/api)
 
@@ -41,7 +42,7 @@ using TeamVortexSoftware.VortexSDK;
 var vortex = new VortexClient(Environment.GetEnvironmentVariable("VORTEX_API_KEY"));
 
 // Create a user object
-var user = new User("user-123", "user@example.com", new List<string> { "autoJoin" });
+var user = new User("user-123", "user@example.com", new List<string> { "autojoin" });
 
 // Generate the JWT
 var jwt = vortex.GenerateJwt(user);
@@ -100,7 +101,7 @@ public class VortexController : ControllerBase
         var isAdmin = User.IsInRole("Admin");
 
         // Create user object with admin scopes if applicable
-        var adminScopes = isAdmin ? new List<string> { "autoJoin" } : null;
+        var adminScopes = isAdmin ? new List<string> { "autojoin" } : null;
         var user = new User(userId, userEmail, adminScopes);
 
         var jwt = _vortex.GenerateJwt(user);
@@ -136,7 +137,7 @@ public class MyService
 
     public async Task<string> GenerateUserJwt(User user)
     {
-        var adminScopes = user.IsAdmin ? new List<string> { "autoJoin" } : null;
+        var adminScopes = user.IsAdmin ? new List<string> { "autojoin" } : null;
         var vortexUser = new User(user.Id, user.Email, adminScopes);
 
         var jwt = _vortex.GenerateJwt(vortexUser);
@@ -207,7 +208,7 @@ public class User
 {
     public string Id { get; set; }              // User's unique identifier
     public string Email { get; set; }           // User's email address
-    public List<string>? AdminScopes { get; set; }  // Optional admin scopes (e.g., "autoJoin")
+    public List<string>? AdminScopes { get; set; }  // Optional admin scopes (e.g., "autojoin")
 }
 ```
 
@@ -219,8 +220,8 @@ The `AdminScopes` property is optional. If provided, the full array will be incl
 // Simple user
 var user = new User("user-123", "user@example.com");
 
-// Admin user with autoJoin scope
-var adminUser = new User("admin-123", "admin@example.com", new List<string> { "autoJoin" });
+// Admin user with autojoin scope
+var adminUser = new User("admin-123", "admin@example.com", new List<string> { "autojoin" });
 ```
 
 ### InvitationGroup (API Response)
@@ -253,7 +254,7 @@ The `VortexClient` implements `IDisposable`. Use it with a `using` statement whe
 ```csharp
 using (var vortex = new VortexClient(apiKey))
 {
-    var user = new User(userId, userEmail, new List<string> { "autoJoin" });
+    var user = new User(userId, userEmail, new List<string> { "autojoin" });
     var jwt = vortex.GenerateJwt(user);
     // Use jwt...
 }
@@ -282,4 +283,4 @@ MIT
 
 ## Support
 
-For support, please contact support@vortexsoftware.com or visit our [documentation](https://docs.vortexsoftware.com).
+For support, please contact support@vortexsoftware.com or visit our [documentation](https://docs.vortexsoftware.com)

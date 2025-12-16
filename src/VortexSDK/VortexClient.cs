@@ -55,7 +55,7 @@ namespace TeamVortexSoftware.VortexSDK
         /// // Simple usage:
         /// var parameters1 = new Dictionary&lt;string, object&gt;
         /// {
-        ///     ["user"] = new User("user-123", "user@example.com", new List&lt;string&gt; { "autoJoin" })
+        ///     ["user"] = new User("user-123", "user@example.com", new List&lt;string&gt; { "autojoin" })
         /// };
         /// var jwt = vortex.GenerateJwt(parameters1);
         ///
