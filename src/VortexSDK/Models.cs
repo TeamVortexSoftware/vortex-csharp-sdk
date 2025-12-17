@@ -217,6 +217,9 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("widgetConfigurationId")]
         public string WidgetConfigurationId { get; set; } = string.Empty;
 
+        [JsonPropertyName("deploymentId")]
+        public string DeploymentId { get; set; } = string.Empty;
+
         [JsonPropertyName("projectId")]
         public string ProjectId { get; set; } = string.Empty;
 
@@ -226,11 +229,23 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("accepts")]
         public List<InvitationAcceptance> Accepts { get; set; } = new();
 
+        [JsonPropertyName("scope")]
+        public string? Scope { get; set; }
+
+        [JsonPropertyName("scopeType")]
+        public string? ScopeType { get; set; }
+
         [JsonPropertyName("expired")]
         public bool Expired { get; set; }
 
         [JsonPropertyName("expires")]
         public string? Expires { get; set; }
+
+        [JsonPropertyName("metadata")]
+        public Dictionary<string, object>? Metadata { get; set; }
+
+        [JsonPropertyName("passThrough")]
+        public string? PassThrough { get; set; }
     }
 
     /// <summary>
