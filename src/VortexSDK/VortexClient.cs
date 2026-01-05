@@ -202,17 +202,83 @@ namespace TeamVortexSoftware.VortexSDK
         }
 
         /// <summary>
-        /// Accept multiple invitations
+        /// Accept multiple invitations using the new User format (preferred)
         /// </summary>
-        public async Task<Invitation> AcceptInvitationsAsync(List<string> invitationIds, InvitationTarget target)
+        /// <param name="invitationIds">List of invitation IDs to accept</param>
+        /// <param name="user">User with email or phone (and optional name)</param>
+        /// <returns>Invitation result</returns>
+        public async Task<Invitation> AcceptInvitationsAsync(List<string> invitationIds, AcceptUser user)
         {
+            if (string.IsNullOrEmpty(user.Email) && string.IsNullOrEmpty(user.Phone))
+            {
+                throw new VortexException("User must have either email or phone");
+            }
+
             var body = new
             {
                 invitationIds,
-                target = new { type = target.Type, value = target.Value }
+                user
             };
 
             return await ApiRequestAsync<Invitation>(HttpMethod.Post, "/api/v1/invitations/accept", body);
+        }
+
+        /// <summary>
+        /// Accept multiple invitations using legacy target format (deprecated)
+        /// </summary>
+        /// <param name="invitationIds">List of invitation IDs to accept</param>
+        /// <param name="target">Legacy target object with type and value</param>
+        /// <returns>Invitation result</returns>
+        [Obsolete("Use AcceptInvitationsAsync(invitationIds, AcceptUser) instead. This method converts the target to a User format.")]
+        public async Task<Invitation> AcceptInvitationsAsync(List<string> invitationIds, InvitationTarget target)
+        {
+            Console.WriteLine("[Vortex SDK] DEPRECATED: Passing a target object is deprecated. Use the AcceptUser format instead: new AcceptUser { Email = \"user@example.com\" }");
+
+            // Convert legacy target to AcceptUser format
+            var user = new AcceptUser();
+            if (target.Type.Equals("email", StringComparison.OrdinalIgnoreCase))
+            {
+                user.Email = target.Value;
+            }
+            else if (target.Type.Equals("sms", StringComparison.OrdinalIgnoreCase) ||
+                     target.Type.Equals("phone", StringComparison.OrdinalIgnoreCase) ||
+                     target.Type.Equals("phoneNumber", StringComparison.OrdinalIgnoreCase))
+            {
+                user.Phone = target.Value;
+            }
+            else
+            {
+                // For other types (like 'username'), try to use as email
+                user.Email = target.Value;
+            }
+
+            return await AcceptInvitationsAsync(invitationIds, user);
+        }
+
+        /// <summary>
+        /// Accept multiple invitations using multiple legacy targets (deprecated)
+        /// Will call the accept endpoint once per target
+        /// </summary>
+        /// <param name="invitationIds">List of invitation IDs to accept</param>
+        /// <param name="targets">Array of legacy target objects</param>
+        /// <returns>Invitation result from the last acceptance</returns>
+        [Obsolete("Use AcceptInvitationsAsync(invitationIds, AcceptUser) instead. Passing multiple targets is no longer supported.")]
+        public async Task<Invitation> AcceptInvitationsAsync(List<string> invitationIds, List<InvitationTarget> targets)
+        {
+            Console.WriteLine("[Vortex SDK] DEPRECATED: Passing an array of targets is deprecated. Use the AcceptUser format instead: new AcceptUser { Email = \"user@example.com\" }");
+
+            if (targets == null || targets.Count == 0)
+            {
+                throw new VortexException("No targets provided");
+            }
+
+            Invitation? lastResult = null;
+            foreach (var target in targets)
+            {
+                lastResult = await AcceptInvitationsAsync(invitationIds, target);
+            }
+
+            return lastResult!;
         }
 
         /// <summary>

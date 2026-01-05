@@ -6,6 +6,7 @@ namespace TeamVortexSoftware.VortexSDK
 {
     /// <summary>
     /// User data for JWT generation
+    /// Requires both id and email
     /// </summary>
     public class User
     {
@@ -26,6 +27,34 @@ namespace TeamVortexSoftware.VortexSDK
             Id = id;
             Email = email;
             AdminScopes = adminScopes;
+        }
+    }
+
+    /// <summary>
+    /// User data for accepting invitations
+    /// Requires either email or phone (or both)
+    /// </summary>
+    public class AcceptUser
+    {
+        [JsonPropertyName("email")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Email { get; set; }
+
+        [JsonPropertyName("phone")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Phone { get; set; }
+
+        [JsonPropertyName("name")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Name { get; set; }
+
+        public AcceptUser() { }
+
+        public AcceptUser(string? email = null, string? phone = null, string? name = null)
+        {
+            Email = email;
+            Phone = phone;
+            Name = name;
         }
     }
 
