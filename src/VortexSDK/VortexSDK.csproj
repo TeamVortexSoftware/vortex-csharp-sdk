@@ -7,7 +7,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
 
     <PackageId>TeamVortexSoftware.VortexSDK</PackageId>
-    <Version>1.1.3</Version>
+    <Version>1.3.0</Version>
     <Authors>Team Vortex Software</Authors>
     <Company>Team Vortex Software</Company>
     <Description>Vortex C# SDK for authentication and invitation management. Compatible with React providers and follows the same paradigms as other Vortex SDKs.</Description>

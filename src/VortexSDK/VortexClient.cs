@@ -53,9 +53,17 @@ namespace TeamVortexSoftware.VortexSDK
         /// <example>
         /// <code>
         /// // Simple usage:
+        /// var user = new User
+        /// {
+        ///     Id = "user-123",
+        ///     Email = "user@example.com",
+        ///     Name = "Jane Doe",                                      // Optional: user's display name
+        ///     AvatarUrl = "https://example.com/avatars/jane.jpg",    // Optional: user's avatar URL
+        ///     AdminScopes = new List&lt;string&gt; { "autojoin" }         // Optional: grants admin privileges
+        /// };
         /// var parameters1 = new Dictionary&lt;string, object&gt;
         /// {
-        ///     ["user"] = new User("user-123", "user@example.com", new List&lt;string&gt; { "autojoin" })
+        ///     ["user"] = user
         /// };
         /// var jwt = vortex.GenerateJwt(parameters1);
         ///
@@ -136,6 +144,18 @@ namespace TeamVortexSoftware.VortexSDK
                 ["userEmail"] = user.Email,
                 ["expires"] = expires
             };
+
+            // Add name if present
+            if (user.Name != null)
+            {
+                payload["name"] = user.Name;
+            }
+
+            // Add avatarUrl if present
+            if (user.AvatarUrl != null)
+            {
+                payload["avatarUrl"] = user.AvatarUrl;
+            }
 
             // Add adminScopes if present
             if (user.AdminScopes != null)
@@ -240,7 +260,7 @@ namespace TeamVortexSoftware.VortexSDK
             {
                 user.Email = target.Value;
             }
-            else if (target.Type.Equals("sms", StringComparison.OrdinalIgnoreCase) ||
+            else if (target.Type.Equals("phone", StringComparison.OrdinalIgnoreCase) ||
                      target.Type.Equals("phone", StringComparison.OrdinalIgnoreCase) ||
                      target.Type.Equals("phoneNumber", StringComparison.OrdinalIgnoreCase))
             {
@@ -304,6 +324,60 @@ namespace TeamVortexSoftware.VortexSDK
         public async Task<Invitation> ReinviteAsync(string invitationId)
         {
             return await ApiRequestAsync<Invitation>(HttpMethod.Post, $"/api/v1/invitations/{invitationId}/reinvite");
+        }
+
+        /// <summary>
+        /// Create an invitation from your backend.
+        /// This method allows you to create invitations programmatically using your API key,
+        /// without requiring a user JWT token. Useful for server-side invitation creation,
+        /// such as "People You May Know" flows or admin-initiated invitations.
+        /// </summary>
+        /// <remarks>
+        /// Target types:
+        /// <list type="bullet">
+        /// <item><description>email: Send an email invitation</description></item>
+        /// <item><description>sms: Create an SMS invitation (short link returned for you to send)</description></item>
+        /// <item><description>internal: Create an internal invitation for PYMK flows (no email sent)</description></item>
+        /// </list>
+        /// </remarks>
+        /// <param name="request">The create invitation request</param>
+        /// <returns>CreateInvitationResponse with id, shortLink, status, and createdAt</returns>
+        /// <example>
+        /// <code>
+        /// // Create an email invitation
+        /// var request = new CreateInvitationRequest(
+        ///     "widget-config-123",
+        ///     CreateInvitationTarget.Email("invitee@example.com"),
+        ///     new Inviter("user-456", "inviter@example.com", "John Doe")
+        /// );
+        /// request.Groups = new List&lt;CreateInvitationGroup&gt;
+        /// {
+        ///     new("team", "team-789", "Engineering")
+        /// };
+        /// var response = await client.CreateInvitationAsync(request);
+        ///
+        /// // Create an internal invitation (PYMK flow)
+        /// var pymkRequest = new CreateInvitationRequest(
+        ///     "widget-config-123",
+        ///     CreateInvitationTarget.Internal("internal-user-abc"),
+        ///     new Inviter("user-456")
+        /// );
+        /// pymkRequest.Source = "pymk";
+        /// var response = await client.CreateInvitationAsync(pymkRequest);
+        /// </code>
+        /// </example>
+        public async Task<CreateInvitationResponse> CreateInvitationAsync(CreateInvitationRequest request)
+        {
+            if (request == null)
+                throw new VortexException("Request cannot be null");
+            if (string.IsNullOrEmpty(request.WidgetConfigurationId))
+                throw new VortexException("widgetConfigurationId is required");
+            if (request.Target == null || string.IsNullOrEmpty(request.Target.Value))
+                throw new VortexException("target with value is required");
+            if (request.Inviter == null || string.IsNullOrEmpty(request.Inviter.UserId))
+                throw new VortexException("inviter with userId is required");
+
+            return await ApiRequestAsync<CreateInvitationResponse>(HttpMethod.Post, "/api/v1/invitations", request);
         }
 
         private async Task<T> ApiRequestAsync<T>(HttpMethod method, string path, object? body = null)
