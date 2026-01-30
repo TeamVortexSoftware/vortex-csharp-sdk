@@ -7,7 +7,7 @@ namespace TeamVortexSoftware.VortexSDK
     /// <summary>
     /// User data for JWT generation
     /// Requires both id and email
-    /// Optional fields: name (max 200 chars), avatarUrl (HTTPS URL, max 2000 chars), adminScopes
+    /// Optional fields: userName (max 200 chars), userAvatarUrl (HTTPS URL, max 2000 chars), adminScopes
     /// </summary>
     public class User
     {
@@ -17,13 +17,13 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
 
-        [JsonPropertyName("name")]
+        [JsonPropertyName("userName")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? Name { get; set; }
+        public string? UserName { get; set; }
 
-        [JsonPropertyName("avatarUrl")]
+        [JsonPropertyName("userAvatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? AvatarUrl { get; set; }
+        public string? UserAvatarUrl { get; set; }
 
         [JsonPropertyName("adminScopes")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -31,12 +31,12 @@ namespace TeamVortexSoftware.VortexSDK
 
         public User() { }
 
-        public User(string id, string email, List<string>? adminScopes = null, string? name = null, string? avatarUrl = null)
+        public User(string id, string email, List<string>? adminScopes = null, string? userName = null, string? userAvatarUrl = null)
         {
             Id = id;
             Email = email;
-            Name = name;
-            AvatarUrl = avatarUrl;
+            UserName = userName;
+            UserAvatarUrl = userAvatarUrl;
             AdminScopes = adminScopes;
         }
     }
@@ -362,25 +362,25 @@ namespace TeamVortexSoftware.VortexSDK
         /// <summary>
         /// Optional: Display name of the inviter
         /// </summary>
-        [JsonPropertyName("name")]
+        [JsonPropertyName("userName")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? Name { get; set; }
+        public string? UserName { get; set; }
 
         /// <summary>
         /// Optional: Avatar URL of the inviter
         /// </summary>
-        [JsonPropertyName("avatarUrl")]
+        [JsonPropertyName("userAvatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? AvatarUrl { get; set; }
+        public string? UserAvatarUrl { get; set; }
 
         public Inviter() { }
 
-        public Inviter(string userId, string? userEmail = null, string? name = null, string? avatarUrl = null)
+        public Inviter(string userId, string? userEmail = null, string? userName = null, string? userAvatarUrl = null)
         {
             UserId = userId;
             UserEmail = userEmail;
-            Name = name;
-            AvatarUrl = avatarUrl;
+            UserName = userName;
+            UserAvatarUrl = userAvatarUrl;
         }
     }
 

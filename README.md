@@ -48,7 +48,7 @@ Your API key is used to:
 
 The Vortex Widget requires a JWT to authenticate users. Here's how to generate one:
 
-#### Simple Usage
+#### Basic Usage
 
 ```csharp
 using TeamVortexSoftware.VortexSDK;
@@ -57,34 +57,17 @@ using TeamVortexSoftware.VortexSDK;
 var vortex = new VortexClient(Environment.GetEnvironmentVariable("VORTEX_API_KEY"));
 
 // Create a user object
-var user = new User("user-123", "user@example.com", new List<string> { "autojoin" });
+var user = new User
+{
+    Id = "user-123",
+    Email = "user@example.com",
+    UserName = "Jane Doe",                                    // Optional: user's display name
+    UserAvatarUrl = "https://example.com/avatars/jane.jpg",  // Optional: user's avatar URL
+    AdminScopes = new List<string> { "autojoin" }            // Optional: grants autojoin admin privileges
+};
 
 // Generate the JWT
 var jwt = vortex.GenerateJwt(user);
-
-Console.WriteLine(jwt);
-```
-
-#### With Additional Properties
-
-```csharp
-using TeamVortexSoftware.VortexSDK;
-
-// Initialize the Vortex client with your API key
-var vortex = new VortexClient(Environment.GetEnvironmentVariable("VORTEX_API_KEY"));
-
-// Create a user object
-var user = new User("user-123", "user@example.com");
-
-// Optional: Add extra properties to the JWT payload
-var extra = new Dictionary<string, object>
-{
-    { "role", "admin" },
-    { "department", "Engineering" }
-};
-
-// Generate the JWT with extra properties
-var jwt = vortex.GenerateJwt(user, extra);
 
 Console.WriteLine(jwt);
 ```
@@ -221,22 +204,34 @@ var result = await vortex.ReinviteAsync("invitation-id");
 ```csharp
 public class User
 {
-    public string Id { get; set; }              // User's unique identifier
-    public string Email { get; set; }           // User's email address
-    public List<string>? AdminScopes { get; set; }  // Optional admin scopes (e.g., "autojoin")
+    public string Id { get; set; }                           // User's unique identifier
+    public string Email { get; set; }                        // User's email address
+    public string? UserName { get; set; }                    // Optional: user's display name (max 200 chars)
+    public string? UserAvatarUrl { get; set; }               // Optional: user's avatar URL (HTTPS, max 2000 chars)
+    public List<string>? AdminScopes { get; set; }           // Optional: admin scopes (e.g., "autojoin")
 }
 ```
 
-The `AdminScopes` property is optional. If provided, the full array will be included in the JWT payload as `adminScopes`.
+All fields except `Id` and `Email` are optional. When provided:
+- `UserName`: Max 200 characters
+- `UserAvatarUrl`: Must be HTTPS URL, max 2000 characters (invalid URLs will be ignored with a warning)
+- `AdminScopes`: Included in JWT payload as `adminScopes` array
 
 **Example:**
 
 ```csharp
-// Simple user
-var user = new User("user-123", "user@example.com");
+// Basic user
+var user = new User { Id = "user-123", Email = "user@example.com" };
 
-// Admin user with autojoin scope
-var adminUser = new User("admin-123", "admin@example.com", new List<string> { "autojoin" });
+// User with profile info and admin scope
+var adminUser = new User
+{
+    Id = "admin-123",
+    Email = "admin@example.com",
+    UserName = "Jane Doe",
+    UserAvatarUrl = "https://example.com/avatars/jane.jpg",
+    AdminScopes = new List<string> { "autojoin" }
+};
 ```
 
 ### InvitationGroup (API Response)

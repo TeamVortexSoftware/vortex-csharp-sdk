@@ -146,15 +146,15 @@ namespace TeamVortexSoftware.VortexSDK
             };
 
             // Add name if present
-            if (user.Name != null)
+            if (user.UserName != null)
             {
-                payload["name"] = user.Name;
+                payload["userName"] = user.UserName;
             }
 
-            // Add avatarUrl if present
-            if (user.AvatarUrl != null)
+            // Add userAvatarUrl if present
+            if (user.UserAvatarUrl != null)
             {
-                payload["avatarUrl"] = user.AvatarUrl;
+                payload["userAvatarUrl"] = user.UserAvatarUrl;
             }
 
             // Add adminScopes if present
