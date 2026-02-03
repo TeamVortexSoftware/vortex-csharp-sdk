@@ -86,7 +86,7 @@ namespace TeamVortexSoftware.VortexSDK.Tests
             Console.WriteLine("Step 3: Accepting invitation...");
             var result = await publicClient.AcceptInvitationsAsync(
                 new List<string> { _invitationId },
-                new InvitationTarget { Type = "email", Value = userEmail }
+                new InvitationTarget { Type = InvitationTargetType.email, Value = userEmail }
             );
             Assert.NotNull(result);
             Console.WriteLine("✓ Accepted invitation successfully");

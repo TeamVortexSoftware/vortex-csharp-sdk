@@ -4,6 +4,76 @@ using System.Text.Json.Serialization;
 
 namespace TeamVortexSoftware.VortexSDK
 {
+    // ============================================================================
+    // Enums for type-safe API values
+    // ============================================================================
+
+    /// <summary>
+    /// Target type for invitation responses
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<InvitationTargetType>))]
+    public enum InvitationTargetType
+    {
+        email,
+        phone,
+        share,
+        @internal  // @ prefix because internal is a C# keyword
+    }
+
+    /// <summary>
+    /// Target type for creating invitations
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<CreateInvitationTargetTypeEnum>))]
+    public enum CreateInvitationTargetTypeEnum
+    {
+        email,
+        phone,
+        @internal
+    }
+
+    /// <summary>
+    /// Type of invitation
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<InvitationType>))]
+    public enum InvitationType
+    {
+        single_use,
+        multi_use,
+        autojoin
+    }
+
+    /// <summary>
+    /// Current status of an invitation
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<InvitationStatus>))]
+    public enum InvitationStatus
+    {
+        queued,
+        sending,
+        sent,
+        delivered,
+        accepted,
+        shared,
+        unfurled,
+        accepted_elsewhere
+    }
+
+    /// <summary>
+    /// Delivery type for invitations
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<DeliveryType>))]
+    public enum DeliveryType
+    {
+        email,
+        phone,
+        share,
+        @internal
+    }
+
+    // ============================================================================
+    // Core types
+    // ============================================================================
+
     /// <summary>
     /// User data for JWT generation
     /// Requires both id and email
@@ -164,23 +234,26 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// Invitation target (email or sms)
+    /// Invitation target (email, phone, share, internal)
     /// </summary>
     public class InvitationTarget
     {
         [JsonPropertyName("type")]
-        public string Type { get; set; } = string.Empty;
+        public InvitationTargetType Type { get; set; }
 
         [JsonPropertyName("value")]
         public string Value { get; set; } = string.Empty;
 
         public InvitationTarget() { }
 
-        public InvitationTarget(string type, string value)
+        public InvitationTarget(InvitationTargetType type, string value)
         {
             Type = type;
             Value = value;
         }
+
+        public static InvitationTarget Email(string value) => new(InvitationTargetType.email, value);
+        public static InvitationTarget Phone(string value) => new(InvitationTargetType.phone, value);
     }
 
     /// <summary>
@@ -233,23 +306,20 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("deliveryCount")]
         public int DeliveryCount { get; set; }
 
-        /// <summary>
-        /// Valid values: "email", "phone", "share", "internal"
-        /// </summary>
         [JsonPropertyName("deliveryTypes")]
-        public List<string> DeliveryTypes { get; set; } = new();
+        public List<DeliveryType> DeliveryTypes { get; set; } = new();
 
         [JsonPropertyName("foreignCreatorId")]
         public string ForeignCreatorId { get; set; } = string.Empty;
 
         [JsonPropertyName("invitationType")]
-        public string InvitationType { get; set; } = string.Empty;
+        public InvitationType InvitationType { get; set; }
 
         [JsonPropertyName("modifiedAt")]
         public string? ModifiedAt { get; set; }
 
         [JsonPropertyName("status")]
-        public string Status { get; set; } = string.Empty;
+        public InvitationStatus Status { get; set; }
 
         [JsonPropertyName("target")]
         public List<InvitationTarget> Target { get; set; } = new();
@@ -316,11 +386,8 @@ namespace TeamVortexSoftware.VortexSDK
     /// </summary>
     public class CreateInvitationTarget
     {
-        /// <summary>
-        /// Target type: "email", "phone", or "internal"
-        /// </summary>
         [JsonPropertyName("type")]
-        public string Type { get; set; } = string.Empty;
+        public CreateInvitationTargetTypeEnum Type { get; set; }
 
         /// <summary>
         /// Target value: email address, phone number, or internal user ID
@@ -330,15 +397,15 @@ namespace TeamVortexSoftware.VortexSDK
 
         public CreateInvitationTarget() { }
 
-        public CreateInvitationTarget(string type, string value)
+        public CreateInvitationTarget(CreateInvitationTargetTypeEnum type, string value)
         {
             Type = type;
             Value = value;
         }
 
-        public static CreateInvitationTarget Email(string email) => new("email", email);
-        public static CreateInvitationTarget Phone(string phone) => new("phone", phone);
-        public static CreateInvitationTarget Internal(string internalId) => new("internal", internalId);
+        public static CreateInvitationTarget Email(string email) => new(CreateInvitationTargetTypeEnum.email, email);
+        public static CreateInvitationTarget Phone(string phone) => new(CreateInvitationTargetTypeEnum.phone, phone);
+        public static CreateInvitationTarget Internal(string internalId) => new(CreateInvitationTargetTypeEnum.@internal, internalId);
     }
 
     /// <summary>
@@ -418,6 +485,38 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
+    /// Configuration for link unfurl (Open Graph) metadata.
+    /// Controls how the invitation link appears when shared on social platforms or messaging apps.
+    /// </summary>
+    public class UnfurlConfig
+    {
+        /// <summary>The title shown in link previews (og:title)</summary>
+        [JsonPropertyName("title")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Title { get; set; }
+
+        /// <summary>The description shown in link previews (og:description)</summary>
+        [JsonPropertyName("description")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Description { get; set; }
+
+        /// <summary>The image URL shown in link previews (og:image) - must be HTTPS</summary>
+        [JsonPropertyName("image")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Image { get; set; }
+
+        /// <summary>The Open Graph type (og:type) - e.g., 'website', 'article', 'product'</summary>
+        [JsonPropertyName("type")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Type { get; set; }
+
+        /// <summary>The site name shown in link previews (og:site_name)</summary>
+        [JsonPropertyName("siteName")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? SiteName { get; set; }
+    }
+
+    /// <summary>
     /// Request body for creating an invitation via the public API (backend SDK use)
     /// </summary>
     public class CreateInvitationRequest
@@ -446,6 +545,10 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("metadata")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, object>? Metadata { get; set; }
+
+        [JsonPropertyName("unfurlConfig")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public UnfurlConfig? UnfurlConfig { get; set; }
 
         public CreateInvitationRequest() { }
 

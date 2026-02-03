@@ -254,21 +254,19 @@ namespace TeamVortexSoftware.VortexSDK
         {
             Console.WriteLine("[Vortex SDK] DEPRECATED: Passing a target object is deprecated. Use the AcceptUser format instead: new AcceptUser { Email = \"user@example.com\" }");
 
-            // Convert legacy target to AcceptUser format
+            // Convert target to AcceptUser format
             var user = new AcceptUser();
-            if (target.Type.Equals("email", StringComparison.OrdinalIgnoreCase))
+            if (target.Type == InvitationTargetType.email)
             {
                 user.Email = target.Value;
             }
-            else if (target.Type.Equals("phone", StringComparison.OrdinalIgnoreCase) ||
-                     target.Type.Equals("phone", StringComparison.OrdinalIgnoreCase) ||
-                     target.Type.Equals("phoneNumber", StringComparison.OrdinalIgnoreCase))
+            else if (target.Type == InvitationTargetType.phone)
             {
                 user.Phone = target.Value;
             }
             else
             {
-                // For other types (like 'username'), try to use as email
+                // For share/internal types, default to email
                 user.Email = target.Value;
             }
 
