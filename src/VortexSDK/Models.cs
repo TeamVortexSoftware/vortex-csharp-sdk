@@ -244,12 +244,34 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("value")]
         public string Value { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Display name of the person being invited
+        /// </summary>
+        [JsonPropertyName("name")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Name { get; set; }
+
+        /// <summary>
+        /// Avatar URL for the person being invited (for display in invitation lists)
+        /// </summary>
+        [JsonPropertyName("avatarUrl")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? AvatarUrl { get; set; }
+
         public InvitationTarget() { }
 
         public InvitationTarget(InvitationTargetType type, string value)
         {
             Type = type;
             Value = value;
+        }
+
+        public InvitationTarget(InvitationTargetType type, string value, string? name = null, string? avatarUrl = null)
+        {
+            Type = type;
+            Value = value;
+            Name = name;
+            AvatarUrl = avatarUrl;
         }
 
         public static InvitationTarget Email(string value) => new(InvitationTargetType.email, value);
@@ -363,6 +385,12 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("source")]
         public string? Source { get; set; }
 
+        /// <summary>
+        /// Customer-defined subtype for analytics segmentation (e.g., "pymk", "find-friends")
+        /// </summary>
+        [JsonPropertyName("subtype")]
+        public string? Subtype { get; set; }
+
         [JsonPropertyName("creatorName")]
         public string? CreatorName { get; set; }
 
@@ -395,12 +423,34 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("value")]
         public string Value { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Display name of the person being invited
+        /// </summary>
+        [JsonPropertyName("name")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Name { get; set; }
+
+        /// <summary>
+        /// Avatar URL for the person being invited (for display in invitation lists)
+        /// </summary>
+        [JsonPropertyName("avatarUrl")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? AvatarUrl { get; set; }
+
         public CreateInvitationTarget() { }
 
         public CreateInvitationTarget(CreateInvitationTargetTypeEnum type, string value)
         {
             Type = type;
             Value = value;
+        }
+
+        public CreateInvitationTarget(CreateInvitationTargetTypeEnum type, string value, string? name = null, string? avatarUrl = null)
+        {
+            Type = type;
+            Value = value;
+            Name = name;
+            AvatarUrl = avatarUrl;
         }
 
         public static CreateInvitationTarget Email(string email) => new(CreateInvitationTargetTypeEnum.email, email);
@@ -537,6 +587,13 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("source")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Source { get; set; }
+
+        /// <summary>
+        /// Customer-defined subtype for analytics segmentation (e.g., "pymk", "find-friends")
+        /// </summary>
+        [JsonPropertyName("subtype")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Subtype { get; set; }
 
         [JsonPropertyName("templateVariables")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
