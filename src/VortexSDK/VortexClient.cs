@@ -378,6 +378,62 @@ namespace TeamVortexSoftware.VortexSDK
             return await ApiRequestAsync<CreateInvitationResponse>(HttpMethod.Post, "/api/v1/invitations", request);
         }
 
+        /// <summary>
+        /// Get autojoin domains configured for a specific scope
+        /// </summary>
+        /// <param name="scopeType">The type of scope (e.g., "organization", "team", "project")</param>
+        /// <param name="scope">The scope identifier (customer's group ID)</param>
+        /// <returns>AutojoinDomainsResponse with autojoin domains and associated invitation</returns>
+        /// <example>
+        /// <code>
+        /// var response = await client.GetAutojoinDomainsAsync("organization", "acme-org");
+        /// foreach (var domain in response.AutojoinDomains)
+        /// {
+        ///     Console.WriteLine($"Domain: {domain.Domain}");
+        /// }
+        /// </code>
+        /// </example>
+        public async Task<AutojoinDomainsResponse> GetAutojoinDomainsAsync(string scopeType, string scope)
+        {
+            var encodedScopeType = Uri.EscapeDataString(scopeType);
+            var encodedScope = Uri.EscapeDataString(scope);
+            return await ApiRequestAsync<AutojoinDomainsResponse>(HttpMethod.Get, $"/api/v1/invitations/by-scope/{encodedScopeType}/{encodedScope}/autojoin");
+        }
+
+        /// <summary>
+        /// Configure autojoin domains for a specific scope.
+        /// This endpoint syncs autojoin domains - it will add new domains, remove domains
+        /// not in the provided list, and deactivate the autojoin invitation if all domains
+        /// are removed (empty array).
+        /// </summary>
+        /// <param name="request">The configure autojoin request</param>
+        /// <returns>AutojoinDomainsResponse with updated autojoin domains and associated invitation</returns>
+        /// <example>
+        /// <code>
+        /// var request = new ConfigureAutojoinRequest(
+        ///     "acme-org",
+        ///     "organization",
+        ///     new List&lt;string&gt; { "acme.com", "acme.org" },
+        ///     "widget-123"
+        /// );
+        /// request.ScopeName = "Acme Corporation";
+        /// var response = await client.ConfigureAutojoinAsync(request);
+        /// </code>
+        /// </example>
+        public async Task<AutojoinDomainsResponse> ConfigureAutojoinAsync(ConfigureAutojoinRequest request)
+        {
+            if (request == null)
+                throw new VortexException("Request cannot be null");
+            if (string.IsNullOrEmpty(request.Scope))
+                throw new VortexException("scope is required");
+            if (string.IsNullOrEmpty(request.ScopeType))
+                throw new VortexException("scopeType is required");
+            if (string.IsNullOrEmpty(request.WidgetId))
+                throw new VortexException("widgetId is required");
+
+            return await ApiRequestAsync<AutojoinDomainsResponse>(HttpMethod.Post, "/api/v1/invitations/autojoin", request);
+        }
+
         private async Task<T> ApiRequestAsync<T>(HttpMethod method, string path, object? body = null)
         {
             var request = new HttpRequestMessage(method, path);

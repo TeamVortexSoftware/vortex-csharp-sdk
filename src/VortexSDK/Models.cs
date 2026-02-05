@@ -646,4 +646,74 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("createdAt")]
         public string CreatedAt { get; set; } = string.Empty;
     }
+
+    // --- Types for autojoin domain management ---
+
+    /// <summary>
+    /// Represents an autojoin domain configuration
+    /// </summary>
+    public class AutojoinDomain
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+
+        [JsonPropertyName("domain")]
+        public string Domain { get; set; } = string.Empty;
+
+        public AutojoinDomain() { }
+
+        public AutojoinDomain(string id, string domain)
+        {
+            Id = id;
+            Domain = domain;
+        }
+    }
+
+    /// <summary>
+    /// Response from autojoin API endpoints
+    /// </summary>
+    public class AutojoinDomainsResponse
+    {
+        [JsonPropertyName("autojoinDomains")]
+        public List<AutojoinDomain> AutojoinDomains { get; set; } = new();
+
+        [JsonPropertyName("invitation")]
+        public Invitation? Invitation { get; set; }
+    }
+
+    /// <summary>
+    /// Request body for configuring autojoin domains
+    /// </summary>
+    public class ConfigureAutojoinRequest
+    {
+        [JsonPropertyName("scope")]
+        public string Scope { get; set; } = string.Empty;
+
+        [JsonPropertyName("scopeType")]
+        public string ScopeType { get; set; } = string.Empty;
+
+        [JsonPropertyName("scopeName")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ScopeName { get; set; }
+
+        [JsonPropertyName("domains")]
+        public List<string> Domains { get; set; } = new();
+
+        [JsonPropertyName("widgetId")]
+        public string WidgetId { get; set; } = string.Empty;
+
+        [JsonPropertyName("metadata")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Dictionary<string, object>? Metadata { get; set; }
+
+        public ConfigureAutojoinRequest() { }
+
+        public ConfigureAutojoinRequest(string scope, string scopeType, List<string> domains, string widgetId)
+        {
+            Scope = scope;
+            ScopeType = scopeType;
+            Domains = domains;
+            WidgetId = widgetId;
+        }
+    }
 }
