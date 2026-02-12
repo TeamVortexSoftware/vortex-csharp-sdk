@@ -163,6 +163,12 @@ namespace TeamVortexSoftware.VortexSDK
                 payload["adminScopes"] = user.AdminScopes;
             }
 
+            // Add allowedEmailDomains if present (for domain-restricted invitations)
+            if (user.AllowedEmailDomains != null && user.AllowedEmailDomains.Count > 0)
+            {
+                payload["allowedEmailDomains"] = user.AllowedEmailDomains;
+            }
+
             // Add any additional properties from parameters (excluding 'user')
             foreach (var kvp in parameters)
             {
@@ -241,6 +247,26 @@ namespace TeamVortexSoftware.VortexSDK
             };
 
             return await ApiRequestAsync<Invitation>(HttpMethod.Post, "/api/v1/invitations/accept", body);
+        }
+
+        /// <summary>
+        /// Accept a single invitation (recommended method)
+        /// </summary>
+        /// <remarks>
+        /// This is the recommended method for accepting invitations.
+        /// </remarks>
+        /// <param name="invitationId">Single invitation ID to accept</param>
+        /// <param name="user">User with email or phone (and optional name)</param>
+        /// <returns>Invitation result</returns>
+        /// <example>
+        /// <code>
+        /// var user = new AcceptUser { Email = "user@example.com", Name = "John Doe" };
+        /// var result = await client.AcceptInvitationAsync("inv-123", user);
+        /// </code>
+        /// </example>
+        public async Task<Invitation> AcceptInvitationAsync(string invitationId, AcceptUser user)
+        {
+            return await AcceptInvitationsAsync(new List<string> { invitationId }, user);
         }
 
         /// <summary>

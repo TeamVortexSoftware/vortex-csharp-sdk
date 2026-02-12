@@ -169,14 +169,11 @@ var invitation = await vortex.GetInvitationAsync("invitation-id");
 await vortex.RevokeInvitationAsync("invitation-id");
 ```
 
-#### Accept Invitations
+#### Accept an Invitation
 
 ```csharp
-var target = new InvitationTarget("email", "user@example.com");
-var result = await vortex.AcceptInvitationsAsync(
-    new List<string> { "invitation-id-1", "invitation-id-2" },
-    target
-);
+var user = new AcceptUser { Email = "user@example.com" };
+var result = await vortex.AcceptInvitationAsync("invitation-id", user);
 ```
 
 #### Get Invitations by Group

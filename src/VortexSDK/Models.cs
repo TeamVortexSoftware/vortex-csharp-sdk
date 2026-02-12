@@ -77,7 +77,7 @@ namespace TeamVortexSoftware.VortexSDK
     /// <summary>
     /// User data for JWT generation
     /// Requires both id and email
-    /// Optional fields: userName (max 200 chars), userAvatarUrl (HTTPS URL, max 2000 chars), adminScopes
+    /// Optional fields: userName (max 200 chars), userAvatarUrl (HTTPS URL, max 2000 chars), adminScopes, allowedEmailDomains
     /// </summary>
     public class User
     {
@@ -98,6 +98,13 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("adminScopes")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AdminScopes { get; set; }
+
+        /// <summary>
+        /// Optional list of allowed email domains for invitation restrictions (e.g., ["acme.com", "acme.org"])
+        /// </summary>
+        [JsonPropertyName("allowedEmailDomains")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<string>? AllowedEmailDomains { get; set; }
 
         public User() { }
 
