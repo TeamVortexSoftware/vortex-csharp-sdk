@@ -37,7 +37,10 @@ namespace TeamVortexSoftware.VortexSDK
                 BaseAddress = new Uri(_baseUrl)
             };
             _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey);
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "vortex-csharp-sdk/1.0.0");
+            var sdkVersion = typeof(VortexClient).Assembly.GetName().Version?.ToString(3) ?? "unknown";
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", $"vortex-csharp-sdk/{sdkVersion}");
+            _httpClient.DefaultRequestHeaders.Add("x-vortex-sdk-name", "vortex-csharp-sdk");
+            _httpClient.DefaultRequestHeaders.Add("x-vortex-sdk-version", sdkVersion);
         }
 
         /// <summary>
