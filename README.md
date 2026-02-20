@@ -196,10 +196,37 @@ var result = await vortex.ReinviteAsync("invitation-id");
 
 #### Sync Internal Invitation
 
+If you're using `internal` delivery type invitations and managing the invitation flow within your own application, you can sync invitation decisions back to Vortex when users accept or decline invitations in your system.
+
 ```csharp
-var request = new SyncInternalInvitationRequest("user-123", "user-456", "accepted", "component-uuid");
+// Sync an internal invitation action (accept or decline)
+var request = new SyncInternalInvitationRequest(
+    "user-123",           // creatorId - The inviter's user ID in your system
+    "user-456",           // targetValue - The invitee's user ID in your system
+    "accepted",           // action - "accepted" or "declined"
+    "component-uuid"      // componentId - The widget component UUID
+);
+
 var result = await vortex.SyncInternalInvitationAsync(request);
+
+Console.WriteLine($"Processed: {result.Processed}");
+Console.WriteLine($"Invitation IDs: {string.Join(", ", result.InvitationIds)}");
 ```
+
+**Parameters:**
+- `creatorId` (string) — The inviter's user ID in your system
+- `targetValue` (string) — The invitee's user ID in your system
+- `action` ("accepted" | "declined") — The invitation decision
+- `componentId` (string) — The widget component UUID
+
+**Response:**
+- `Processed` (int) — Count of invitations processed
+- `InvitationIds` (string[]) — IDs of processed invitations
+
+**Use cases:**
+- You handle invitation delivery through your own in-app notifications or UI
+- Users accept/decline invitations within your application
+- You need to keep Vortex updated with the invitation status
 ```
 
 ## Data Types
