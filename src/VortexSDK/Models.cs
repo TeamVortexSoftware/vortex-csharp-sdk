@@ -654,6 +654,54 @@ namespace TeamVortexSoftware.VortexSDK
         public string CreatedAt { get; set; } = string.Empty;
     }
 
+    // --- Types for syncing internal invitation actions ---
+
+    /// <summary>
+    /// Request body for syncing an internal invitation action
+    /// </summary>
+    public class SyncInternalInvitationRequest
+    {
+        /// <summary>The inviter's user ID</summary>
+        [JsonPropertyName("creatorId")]
+        public string CreatorId { get; set; } = string.Empty;
+
+        /// <summary>The invitee's user ID</summary>
+        [JsonPropertyName("targetValue")]
+        public string TargetValue { get; set; } = string.Empty;
+
+        /// <summary>The action taken: "accepted" or "declined"</summary>
+        [JsonPropertyName("action")]
+        public string Action { get; set; } = string.Empty;
+
+        /// <summary>The widget component UUID</summary>
+        [JsonPropertyName("componentId")]
+        public string ComponentId { get; set; } = string.Empty;
+
+        public SyncInternalInvitationRequest() { }
+
+        public SyncInternalInvitationRequest(string creatorId, string targetValue, string action, string componentId)
+        {
+            CreatorId = creatorId;
+            TargetValue = targetValue;
+            Action = action;
+            ComponentId = componentId;
+        }
+    }
+
+    /// <summary>
+    /// Response from syncing an internal invitation action
+    /// </summary>
+    public class SyncInternalInvitationResponse
+    {
+        /// <summary>Number of invitations processed</summary>
+        [JsonPropertyName("processed")]
+        public int Processed { get; set; }
+
+        /// <summary>IDs of the invitations that were processed</summary>
+        [JsonPropertyName("invitationIds")]
+        public List<string> InvitationIds { get; set; } = new();
+    }
+
     // --- Types for autojoin domain management ---
 
     /// <summary>

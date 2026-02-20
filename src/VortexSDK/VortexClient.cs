@@ -463,6 +463,30 @@ namespace TeamVortexSoftware.VortexSDK
             return await ApiRequestAsync<AutojoinDomainsResponse>(HttpMethod.Post, "/api/v1/invitations/autojoin", request);
         }
 
+        /// <summary>
+        /// Sync an internal invitation action (accept or decline)
+        /// </summary>
+        /// <remarks>
+        /// This method notifies Vortex that an internal invitation was accepted or declined
+        /// within your application, so Vortex can update the invitation status accordingly.
+        /// </remarks>
+        /// <param name="request">The sync internal invitation request</param>
+        /// <returns>SyncInternalInvitationResponse with processed count and invitationIds</returns>
+        /// <example>
+        /// <code>
+        /// var request = new SyncInternalInvitationRequest("user-123", "user-456", "accepted", "component-uuid");
+        /// var response = await client.SyncInternalInvitationAsync(request);
+        /// Console.WriteLine($"Processed: {response.Processed}");
+        /// </code>
+        /// </example>
+        public async Task<SyncInternalInvitationResponse> SyncInternalInvitationAsync(SyncInternalInvitationRequest request)
+        {
+            if (request == null)
+                throw new VortexException("Request cannot be null");
+
+            return await ApiRequestAsync<SyncInternalInvitationResponse>(HttpMethod.Post, "/api/v1/invitation-actions/sync-internal-invitation", request);
+        }
+
         private async Task<T> ApiRequestAsync<T>(HttpMethod method, string path, object? body = null)
         {
             var request = new HttpRequestMessage(method, path);

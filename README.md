@@ -194,6 +194,14 @@ await vortex.DeleteInvitationsByGroupAsync("workspace", "workspace-123");
 var result = await vortex.ReinviteAsync("invitation-id");
 ```
 
+#### Sync Internal Invitation
+
+```csharp
+var request = new SyncInternalInvitationRequest("user-123", "user-456", "accepted", "component-uuid");
+var result = await vortex.SyncInternalInvitationAsync(request);
+```
+```
+
 ## Data Types
 
 ### User (JWT Generation)
