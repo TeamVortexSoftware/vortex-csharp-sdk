@@ -484,7 +484,7 @@ namespace TeamVortexSoftware.VortexSDK
             if (request == null)
                 throw new VortexException("Request cannot be null");
 
-            return await ApiRequestAsync<SyncInternalInvitationResponse>(HttpMethod.Post, "/api/v1/invitation-actions/sync-internal-invitation", request);
+            return await ApiRequestAsync<SyncInternalInvitationResponse>(HttpMethod.Post, "/api/v1/invitations/sync-internal-invitation", request);
         }
 
         private async Task<T> ApiRequestAsync<T>(HttpMethod method, string path, object? body = null)
