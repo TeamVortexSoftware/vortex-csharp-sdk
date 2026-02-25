@@ -323,6 +323,46 @@ catch (VortexException ex)
 
 MIT
 
+## Webhooks
+
+The SDK provides built-in support for verifying and parsing incoming webhook events from Vortex.
+
+```csharp
+using TeamVortexSoftware.VortexSDK;
+
+var webhooks = new VortexWebhooks(Environment.GetEnvironmentVariable("VORTEX_WEBHOOK_SECRET")!);
+
+// In your ASP.NET Core controller:
+[HttpPost("/webhooks/vortex")]
+public IActionResult HandleWebhook(
+    [FromBody] string payload,
+    [FromHeader(Name = "X-Vortex-Signature")] string signature)
+{
+    try
+    {
+        var evt = webhooks.ConstructEvent(payload, signature);
+
+        if (evt is VortexWebhookEvent webhookEvent)
+        {
+            if (webhookEvent.Type == WebhookEventType.InvitationAccepted)
+            {
+                // Handle invitation accepted
+            }
+        }
+        else if (evt is VortexAnalyticsEvent analyticsEvent)
+        {
+            Console.WriteLine($"Analytics: {analyticsEvent.Name}");
+        }
+
+        return Ok();
+    }
+    catch (VortexWebhookSignatureException)
+    {
+        return BadRequest("Invalid signature");
+    }
+}
+```
+
 ## Support
 
 For support, please contact support@vortexsoftware.com or visit our [documentation](https://docs.vortexsoftware.com)
