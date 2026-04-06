@@ -44,6 +44,33 @@ Your API key is used to:
 
 ## Usage
 
+### Sign user data for use with the Vortex Widget (Alternative to JWT)
+
+Instead of generating a full JWT, you can use the simpler `Sign()` method. This produces an HMAC signature that you pass alongside the `user` prop on your Vortex widget.
+
+```csharp
+using TeamVortexSoftware.VortexSDK;
+using System.Collections.Generic;
+
+var vortex = new VortexClient(Environment.GetEnvironmentVariable("VORTEX_API_KEY"));
+
+// Sign the user data
+var user = new Dictionary<string, object>
+{
+    { "id", "user-123" },
+    { "email", "user@example.com" },
+    { "name", "Jane Doe" }  // Optional
+};
+string signature = vortex.Sign(user);
+
+// Pass both user and signature to your frontend
+// Frontend usage:
+// <VortexInvite
+//   user={{ userId: "user-123", userEmail: "user@example.com", name: "Jane Doe" }}
+//   signature={signature}
+// />
+```
+
 ### Generate a JWT for the Vortex Widget
 
 The Vortex Widget requires a JWT to authenticate users. Here's how to generate one:
@@ -176,16 +203,16 @@ var user = new AcceptUser { Email = "user@example.com" };
 var result = await vortex.AcceptInvitationAsync("invitation-id", user);
 ```
 
-#### Get Invitations by Group
+#### Get Invitations by Scope
 
 ```csharp
-var invitations = await vortex.GetInvitationsByGroupAsync("workspace", "workspace-123");
+var invitations = await vortex.GetInvitationsByScopeAsync("workspace", "workspace-123");
 ```
 
-#### Delete Invitations by Group
+#### Delete Invitations by Scope
 
 ```csharp
-await vortex.DeleteInvitationsByGroupAsync("workspace", "workspace-123");
+await vortex.DeleteInvitationsByScopeAsync("workspace", "workspace-123");
 ```
 
 #### Reinvite
@@ -214,20 +241,24 @@ Console.WriteLine($"Invitation IDs: {string.Join(", ", result.InvitationIds)}");
 ```
 
 **Parameters:**
+
 - `creatorId` (string) — The inviter's user ID in your system
 - `targetValue` (string) — The invitee's user ID in your system
 - `action` ("accepted" | "declined") — The invitation decision
 - `componentId` (string) — The widget component UUID
 
 **Response:**
+
 - `Processed` (int) — Count of invitations processed
 - `InvitationIds` (string[]) — IDs of processed invitations
 
 **Use cases:**
+
 - You handle invitation delivery through your own in-app notifications or UI
 - Users accept/decline invitations within your application
 - You need to keep Vortex updated with the invitation status
-```
+
+````
 
 ## Data Types
 
@@ -242,9 +273,10 @@ public class User
     public string? UserAvatarUrl { get; set; }               // Optional: user's avatar URL (HTTPS, max 2000 chars)
     public List<string>? AdminScopes { get; set; }           // Optional: admin scopes (e.g., "autojoin")
 }
-```
+````
 
 All fields except `Id` and `Email` are optional. When provided:
+
 - `UserName`: Max 200 characters
 - `UserAvatarUrl`: Must be HTTPS URL, max 2000 characters (invalid URLs will be ignored with a warning)
 - `AdminScopes`: Included in JWT payload as `adminScopes` array
@@ -266,18 +298,18 @@ var adminUser = new User
 };
 ```
 
-### InvitationGroup (API Response)
+### InvitationScope (API Response)
 
-When receiving invitation data from the API, groups include all fields:
+When receiving invitation data from the API, scopes include all fields:
 
 ```csharp
-public class InvitationGroup
+public class InvitationScope
 {
     public string Id { get; set; }         // Vortex internal UUID
     public string AccountId { get; set; }  // Vortex account ID
-    public string GroupId { get; set; }    // Customer's group ID (your identifier)
-    public string Type { get; set; }       // Group type (e.g., "workspace", "team")
-    public string Name { get; set; }       // Group name
+    public string Scope { get; set; }      // Customer's scope ID (your identifier)
+    public string Type { get; set; }       // Scope type (e.g., "workspace", "team")
+    public string Name { get; set; }       // Scope name
     public string CreatedAt { get; set; }  // ISO 8601 timestamp
 }
 ```

@@ -80,6 +80,56 @@ namespace TeamVortexSoftware.VortexSDK
         /// var jwt = vortex.GenerateJwt(parameters2);
         /// </code>
         /// </example>
+        /// <summary>
+        /// Sign a user object for use with the widget signature prop.
+        /// </summary>
+        /// <param name="user">Dictionary with user data (id, email, etc.)</param>
+        /// <returns>Signature string in "kid:hexDigest" format</returns>
+        public string Sign(Dictionary<string, object> user)
+        {
+            var parts = _apiKey.Split('.');
+            if (parts.Length != 3 || parts[0] != "VRTX")
+                throw new VortexException("Invalid API key format");
+
+            var uuidBytes = Convert.FromBase64String(parts[1].Replace('-', '+').Replace('_', '/').PadRight((parts[1].Length + 3) & ~3, '='));
+            if (uuidBytes.Length != 16)
+                throw new VortexException("Invalid API key UUID length");
+            var kid =
+                $"{uuidBytes[0]:x2}{uuidBytes[1]:x2}{uuidBytes[2]:x2}{uuidBytes[3]:x2}-" +
+                $"{uuidBytes[4]:x2}{uuidBytes[5]:x2}-" +
+                $"{uuidBytes[6]:x2}{uuidBytes[7]:x2}-" +
+                $"{uuidBytes[8]:x2}{uuidBytes[9]:x2}-" +
+                $"{uuidBytes[10]:x2}{uuidBytes[11]:x2}{uuidBytes[12]:x2}{uuidBytes[13]:x2}{uuidBytes[14]:x2}{uuidBytes[15]:x2}";
+            var key = parts[2];
+
+            // Derive signing key
+            using var signingHmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
+            var signingKey = signingHmac.ComputeHash(Encoding.UTF8.GetBytes(kid));
+
+            // Build canonical payload — include ALL user fields with key normalization
+            var canonical = new SortedDictionary<string, object>();
+            foreach (var entry in user)
+            {
+                if (entry.Key == "id") canonical["userId"] = entry.Value;
+                else if (entry.Key == "email") canonical["userEmail"] = entry.Value;
+                else canonical[entry.Key] = entry.Value;
+            }
+            if (!canonical.ContainsKey("userId") || canonical["userId"] == null)
+                throw new VortexException("userId (or id) is required for signing");
+
+            var canonicalJson = JsonSerializer.Serialize(canonical, new JsonSerializerOptions
+            {
+                WriteIndented = false,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            using var mac = new HMACSHA256(signingKey);
+            var digestBytes = mac.ComputeHash(Encoding.UTF8.GetBytes(canonicalJson));
+            var digest = BitConverter.ToString(digestBytes).Replace("-", "").ToLower();
+
+            return $"{kid}:{digest}";
+        }
+
         public string GenerateJwt(Dictionary<string, object> parameters)
         {
             // Extract user from parameters
@@ -148,16 +198,18 @@ namespace TeamVortexSoftware.VortexSDK
                 ["expires"] = expires
             };
 
-            // Add name if present
-            if (user.UserName != null)
+            // Add name if present (prefer new property, fall back to deprecated)
+            var userName = user.Name ?? user.UserName;
+            if (userName != null)
             {
-                payload["userName"] = user.UserName;
+                payload["name"] = userName;
             }
 
-            // Add userAvatarUrl if present
-            if (user.UserAvatarUrl != null)
+            // Add avatarUrl if present (prefer new property, fall back to deprecated)
+            var userAvatarUrl = user.AvatarUrl ?? user.UserAvatarUrl;
+            if (userAvatarUrl != null)
             {
-                payload["userAvatarUrl"] = user.UserAvatarUrl;
+                payload["avatarUrl"] = userAvatarUrl;
             }
 
             // Add adminScopes if present
@@ -331,17 +383,17 @@ namespace TeamVortexSoftware.VortexSDK
         /// <summary>
         /// Delete all invitations for a specific group
         /// </summary>
-        public async Task DeleteInvitationsByGroupAsync(string groupType, string groupId)
+        public async Task DeleteInvitationsByScopeAsync(string groupType, string groupId)
         {
-            await ApiRequestAsync<object>(HttpMethod.Delete, $"/api/v1/invitations/by-group/{groupType}/{groupId}");
+            await ApiRequestAsync<object>(HttpMethod.Delete, $"/api/v1/invitations/by-scope/{groupType}/{groupId}");
         }
 
         /// <summary>
         /// Get all invitations for a specific group
         /// </summary>
-        public async Task<List<Invitation>> GetInvitationsByGroupAsync(string groupType, string groupId)
+        public async Task<List<Invitation>> GetInvitationsByScopeAsync(string groupType, string groupId)
         {
-            var response = await ApiRequestAsync<InvitationsResponse>(HttpMethod.Get, $"/api/v1/invitations/by-group/{groupType}/{groupId}");
+            var response = await ApiRequestAsync<InvitationsResponse>(HttpMethod.Get, $"/api/v1/invitations/by-scope/{groupType}/{groupId}");
             return response.Invitations ?? new List<Invitation>();
         }
 
@@ -377,7 +429,7 @@ namespace TeamVortexSoftware.VortexSDK
         ///     CreateInvitationTarget.Email("invitee@example.com"),
         ///     new Inviter("user-456", "inviter@example.com", "John Doe")
         /// );
-        /// request.Groups = new List&lt;CreateInvitationGroup&gt;
+        /// request.Groups = new List&lt;CreateInvitationScope&gt;
         /// {
         ///     new("team", "team-789", "Engineering")
         /// };
@@ -403,6 +455,19 @@ namespace TeamVortexSoftware.VortexSDK
                 throw new VortexException("target with value is required");
             if (request.Inviter == null || string.IsNullOrEmpty(request.Inviter.UserId))
                 throw new VortexException("inviter with userId is required");
+
+            // Scope translation: flat params > scopes > groups
+            if (!string.IsNullOrEmpty(request.ScopeId) && request.Groups == null && request.Scopes == null)
+            {
+                request.Groups = new List<CreateInvitationScope>
+                {
+                    new CreateInvitationScope(request.ScopeType ?? "", request.ScopeId, request.ScopeName ?? "")
+                };
+            }
+            else if (request.Scopes != null && request.Groups == null)
+            {
+                request.Groups = request.Scopes;
+            }
 
             return await ApiRequestAsync<CreateInvitationResponse>(HttpMethod.Post, "/api/v1/invitations", request);
         }

@@ -77,7 +77,7 @@ namespace TeamVortexSoftware.VortexSDK
     /// <summary>
     /// User data for JWT generation
     /// Requires both id and email
-    /// Optional fields: userName (max 200 chars), userAvatarUrl (HTTPS URL, max 2000 chars), adminScopes, allowedEmailDomains
+    /// Optional fields: Name (max 200 chars), AvatarUrl (HTTPS URL, max 2000 chars), adminScopes, allowedEmailDomains
     /// </summary>
     public class User
     {
@@ -87,12 +87,26 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
 
+        /// <summary>User's display name (preferred)</summary>
+        [JsonPropertyName("name")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Name { get; set; }
+
+        /// <summary>User's avatar URL (preferred)</summary>
+        [JsonPropertyName("avatarUrl")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? AvatarUrl { get; set; }
+
+        /// <summary>DEPRECATED: Use Name instead</summary>
         [JsonPropertyName("userName")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [Obsolete("Use Name instead")]
         public string? UserName { get; set; }
 
+        /// <summary>DEPRECATED: Use AvatarUrl instead</summary>
         [JsonPropertyName("userAvatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [Obsolete("Use AvatarUrl instead")]
         public string? UserAvatarUrl { get; set; }
 
         [JsonPropertyName("adminScopes")]
@@ -108,12 +122,12 @@ namespace TeamVortexSoftware.VortexSDK
 
         public User() { }
 
-        public User(string id, string email, List<string>? adminScopes = null, string? userName = null, string? userAvatarUrl = null)
+        public User(string id, string email, List<string>? adminScopes = null, string? name = null, string? avatarUrl = null)
         {
             Id = id;
             Email = email;
-            UserName = userName;
-            UserAvatarUrl = userAvatarUrl;
+            Name = name;
+            AvatarUrl = avatarUrl;
             AdminScopes = adminScopes;
         }
     }
@@ -181,7 +195,7 @@ namespace TeamVortexSoftware.VortexSDK
 
         [JsonPropertyName("groupId")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? GroupId { get; set; }
+        public string? Scope { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
@@ -193,7 +207,7 @@ namespace TeamVortexSoftware.VortexSDK
             Type = type;
             Name = name;
             Id = id;
-            GroupId = groupId;
+            Scope = groupId;
         }
     }
 
@@ -201,7 +215,7 @@ namespace TeamVortexSoftware.VortexSDK
     /// Invitation group from API responses
     /// This matches the MemberGroups table structure from the API
     /// </summary>
-    public class InvitationGroup
+    public class InvitationScope
     {
         /// <summary>Vortex internal UUID</summary>
         [JsonPropertyName("id")]
@@ -213,7 +227,15 @@ namespace TeamVortexSoftware.VortexSDK
 
         /// <summary>Customer's group ID (the ID they provided to Vortex)</summary>
         [JsonPropertyName("groupId")]
-        public string GroupId { get; set; } = string.Empty;
+        public string Scope { get; set; } = string.Empty;
+
+        /// <summary>Preferred alias for Scope/groupId</summary>
+        [JsonIgnore]
+        public string ScopeId
+        {
+            get => Scope;
+            set => Scope = value;
+        }
 
         /// <summary>Group type (e.g., "workspace", "team")</summary>
         [JsonPropertyName("type")]
@@ -227,13 +249,13 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("createdAt")]
         public string CreatedAt { get; set; } = string.Empty;
 
-        public InvitationGroup() { }
+        public InvitationScope() { }
 
-        public InvitationGroup(string id, string accountId, string groupId, string type, string name, string createdAt)
+        public InvitationScope(string id, string accountId, string groupId, string type, string name, string createdAt)
         {
             Id = id;
             AccountId = accountId;
-            GroupId = groupId;
+            Scope = groupId;
             Type = type;
             Name = name;
             CreatedAt = createdAt;
@@ -366,7 +388,15 @@ namespace TeamVortexSoftware.VortexSDK
         public string ProjectId { get; set; } = string.Empty;
 
         [JsonPropertyName("groups")]
-        public List<InvitationGroup> Groups { get; set; } = new();
+        public List<InvitationScope> Groups { get; set; } = new();
+
+        /// <summary>Preferred alias for Groups. Each element also has ScopeId.</summary>
+        [JsonIgnore]
+        public List<InvitationScope> Scopes
+        {
+            get => Groups;
+            set => Groups = value;
+        }
 
         [JsonPropertyName("accepts")]
         public List<InvitationAcceptance> Accepts { get; set; } = new();
@@ -484,34 +514,46 @@ namespace TeamVortexSoftware.VortexSDK
         public string? UserEmail { get; set; }
 
         /// <summary>
-        /// Optional: Display name of the inviter
+        /// Optional: Display name of the inviter (preferred)
         /// </summary>
-        [JsonPropertyName("userName")]
+        [JsonPropertyName("name")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? UserName { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
-        /// Optional: Avatar URL of the inviter
+        /// Optional: Avatar URL of the inviter (preferred)
         /// </summary>
+        [JsonPropertyName("avatarUrl")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? AvatarUrl { get; set; }
+
+        /// <summary>DEPRECATED: Use Name instead</summary>
+        [JsonPropertyName("userName")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [Obsolete("Use Name instead")]
+        public string? UserName { get; set; }
+
+        /// <summary>DEPRECATED: Use AvatarUrl instead</summary>
         [JsonPropertyName("userAvatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [Obsolete("Use AvatarUrl instead")]
         public string? UserAvatarUrl { get; set; }
 
         public Inviter() { }
 
-        public Inviter(string userId, string? userEmail = null, string? userName = null, string? userAvatarUrl = null)
+        public Inviter(string userId, string? userEmail = null, string? name = null, string? avatarUrl = null)
         {
             UserId = userId;
             UserEmail = userEmail;
-            UserName = userName;
-            UserAvatarUrl = userAvatarUrl;
+            Name = name;
+            AvatarUrl = avatarUrl;
         }
     }
 
     /// <summary>
     /// Group information for creating invitations
     /// </summary>
-    public class CreateInvitationGroup
+    public class CreateInvitationScope
     {
         /// <summary>
         /// Group type (e.g., "team", "organization")
@@ -523,7 +565,17 @@ namespace TeamVortexSoftware.VortexSDK
         /// Your internal group ID
         /// </summary>
         [JsonPropertyName("groupId")]
-        public string GroupId { get; set; } = string.Empty;
+        public string Scope { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Preferred alias for Scope/groupId
+        /// </summary>
+        [JsonIgnore]
+        public string ScopeId
+        {
+            get => Scope;
+            set => Scope = value;
+        }
 
         /// <summary>
         /// Display name of the group
@@ -531,12 +583,12 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
-        public CreateInvitationGroup() { }
+        public CreateInvitationScope() { }
 
-        public CreateInvitationGroup(string type, string groupId, string name)
+        public CreateInvitationScope(string type, string groupId, string name)
         {
             Type = type;
-            GroupId = groupId;
+            Scope = groupId;
             Name = name;
         }
     }
@@ -589,7 +641,23 @@ namespace TeamVortexSoftware.VortexSDK
 
         [JsonPropertyName("groups")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public List<CreateInvitationGroup>? Groups { get; set; }
+        public List<CreateInvitationScope>? Groups { get; set; }
+
+        /// <summary>Preferred: flat scope ID for single scope (takes priority over Groups/Scopes)</summary>
+        [JsonIgnore]
+        public string? ScopeId { get; set; }
+
+        /// <summary>Scope type when using flat ScopeId param</summary>
+        [JsonIgnore]
+        public string? ScopeType { get; set; }
+
+        /// <summary>Scope name when using flat ScopeId param</summary>
+        [JsonIgnore]
+        public string? ScopeName { get; set; }
+
+        /// <summary>Deprecated: use ScopeId/ScopeType/ScopeName or Groups</summary>
+        [JsonIgnore]
+        public List<CreateInvitationScope>? Scopes { get; set; }
 
         [JsonPropertyName("source")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

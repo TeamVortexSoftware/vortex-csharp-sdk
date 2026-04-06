@@ -4,10 +4,12 @@
 **Compatible with:** .NET 6.0+ (optimized for .NET 8.0)
 
 ## Prerequisites
+
 From integration contract you need: API endpoints, scope entity, authentication patterns
 From discovery data you need: .NET version, Controllers vs Minimal APIs, database ORM, auth claim names
 
 ## Key Facts
+
 - VortexClient registered as Singleton in DI container
 - All I/O operations use async/await
 - API key loaded from IConfiguration
@@ -20,6 +22,7 @@ From discovery data you need: .NET version, Controllers vs Minimal APIs, databas
 Read: `Program.cs`, `appsettings.json`, example controller/endpoint, database context
 
 Determine and note:
+
 - .NET version (6.0, 7.0, 8.0)
 - Controllers or Minimal APIs?
 - Controllers/endpoints location
@@ -183,17 +186,17 @@ namespace YourNamespace.Controllers
                 var accepted = await _vortex.AcceptInvitationsAsync(request.InvitationIds, acceptUser);
 
                 // Create memberships - adapt to their DB schema
-                foreach (var group in accepted.Groups)
+                foreach (var scope in accepted.Groups)
                 {
                     var exists = await _dbContext.WorkspaceMembers // Adapt table name
-                        .AnyAsync(m => m.UserId == userId && m.WorkspaceId == group.GroupId);
+                        .AnyAsync(m => m.UserId == userId && m.WorkspaceId == scope.Scope);
 
                     if (!exists)
                     {
                         _dbContext.WorkspaceMembers.Add(new WorkspaceMember // Adapt model
                         {
                             UserId = userId,
-                            WorkspaceId = group.GroupId, // Adapt column names
+                            WorkspaceId = scope.Scope, // Adapt column names
                             Role = "member",
                             JoinedAt = DateTime.UtcNow
                         });
@@ -273,17 +276,17 @@ app.MapPost("/api/vortex/invitations/accept", async (
         var acceptUser = new AcceptUser { Email = userEmail };
         var accepted = await vortex.AcceptInvitationsAsync(request.InvitationIds, acceptUser);
 
-        foreach (var group in accepted.Groups)
+        foreach (var scope in accepted.Groups)
         {
             var exists = await dbContext.WorkspaceMembers
-                .AnyAsync(m => m.UserId == userId && m.WorkspaceId == group.GroupId);
+                .AnyAsync(m => m.UserId == userId && m.WorkspaceId == scope.Scope);
 
             if (!exists)
             {
                 dbContext.WorkspaceMembers.Add(new WorkspaceMember
                 {
                     UserId = userId,
-                    WorkspaceId = group.GroupId,
+                    WorkspaceId = scope.Scope,
                     Role = "member",
                     JoinedAt = DateTime.UtcNow
                 });
@@ -304,6 +307,7 @@ public record AcceptInvitationsRequest(List<string> InvitationIds);
 ```
 
 **Critical - Adapt database logic:**
+
 - Use their actual table names (from discovery)
 - Use their actual column names
 - Use their actual model classes
@@ -342,6 +346,7 @@ dotnet build
 ```
 
 Verify:
+
 - No compilation errors
 - `grep -r "AddSingleton<VortexClient>" Program.cs` finds registration
 - `grep -r "api/vortex/jwt"` finds JWT endpoint
@@ -366,12 +371,14 @@ Verify:
 ## After Implementation Report
 
 List files created/modified:
+
 - DI Registration: Program.cs or Startup.cs
 - Endpoints: Controllers/VortexController.cs OR Program.cs (minimal APIs)
 - Configuration: appsettings.json, appsettings.Development.json
 - Database: Accept endpoint creates memberships in [table name]
 
 Confirm:
+
 - VortexClient registered as Singleton
 - Three endpoints created (jwt, get invitation, accept)
 - JWT endpoint requires authentication
@@ -381,6 +388,7 @@ Confirm:
 ## Production Configuration
 
 Set environment variable:
+
 - Linux/Mac: `export VORTEX__APIKEY=your-key`
 - Windows: `$env:VORTEX__APIKEY="your-key"`
 - Azure: App Setting `Vortex__ApiKey`
