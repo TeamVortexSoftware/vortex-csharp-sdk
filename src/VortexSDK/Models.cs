@@ -150,13 +150,25 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }
 
+        /// <summary>
+        /// Whether the accepting user is an existing user in your system.
+        /// Set to true if the user was already registered before accepting the invitation.
+        /// Set to false if this is a new user signup.
+        /// Leave as null if unknown.
+        /// Used for analytics to track new vs existing user conversions.
+        /// </summary>
+        [JsonPropertyName("isExisting")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? IsExisting { get; set; }
+
         public AcceptUser() { }
 
-        public AcceptUser(string? email = null, string? phone = null, string? name = null)
+        public AcceptUser(string? email = null, string? phone = null, string? name = null, bool? isExisting = null)
         {
             Email = email;
             Phone = phone;
             Name = name;
+            IsExisting = isExisting;
         }
     }
 
@@ -837,6 +849,108 @@ namespace TeamVortexSoftware.VortexSDK
             ScopeType = scopeType;
             Domains = domains;
             WidgetId = widgetId;
+        }
+    }
+
+    // ─── GenerateToken types ────────────────────────────────────
+
+    /// <summary>
+    /// User data for GenerateToken
+    /// </summary>
+    public class TokenUser
+    {
+        /// <summary>
+        /// User ID. Nullable to support the "missing id" case (SDK will warn but allow it).
+        /// When null or empty, the field is omitted from JSON.
+        /// </summary>
+        [JsonPropertyName("id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string? Id { get; set; }
+
+        [JsonPropertyName("name")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("email")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Email { get; set; }
+
+        [JsonPropertyName("avatarUrl")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? AvatarUrl { get; set; }
+
+        [JsonPropertyName("adminScopes")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<string>? AdminScopes { get; set; }
+
+        public TokenUser() { }
+
+        public TokenUser(string id)
+        {
+            Id = id;
+        }
+
+        public TokenUser(string? id, string? name = null, string? email = null)
+        {
+            Id = id;
+            Name = name;
+            Email = email;
+        }
+    }
+
+    /// <summary>
+    /// Payload for GenerateToken
+    /// </summary>
+    public class GenerateTokenPayload
+    {
+        [JsonPropertyName("user")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public TokenUser? User { get; set; }
+
+        [JsonPropertyName("component")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Component { get; set; }
+
+        [JsonPropertyName("scope")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Scope { get; set; }
+
+        [JsonPropertyName("vars")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Dictionary<string, object>? Vars { get; set; }
+
+        [JsonExtensionData]
+        public Dictionary<string, object>? Extra { get; set; }
+
+        public GenerateTokenPayload() { }
+
+        public GenerateTokenPayload(TokenUser user)
+        {
+            User = user;
+        }
+    }
+
+    /// <summary>
+    /// Options for GenerateToken
+    /// </summary>
+    public class GenerateTokenOptions
+    {
+        /// <summary>
+        /// Token expiry. String format like "5m", "1h", "24h", "7d" or integer seconds.
+        /// Default: 5 minutes (300 seconds).
+        /// </summary>
+        public object? ExpiresIn { get; set; }
+
+        public GenerateTokenOptions() { }
+
+        public GenerateTokenOptions(string expiresIn)
+        {
+            ExpiresIn = expiresIn;
+        }
+
+        public GenerateTokenOptions(int expiresInSeconds)
+        {
+            ExpiresIn = expiresInSeconds;
         }
     }
 }

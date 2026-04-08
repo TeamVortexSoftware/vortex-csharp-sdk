@@ -130,6 +130,140 @@ namespace TeamVortexSoftware.VortexSDK
             return $"{kid}:{digest}";
         }
 
+        /// <summary>
+        /// Parse expiration time string or int into seconds
+        /// </summary>
+        private int ParseExpiresIn(object expiresIn)
+        {
+            if (expiresIn is int seconds)
+            {
+                if (seconds <= 0)
+                    throw new VortexException($"Invalid expiresIn value: \"{seconds}\". Must be positive.");
+                return seconds;
+            }
+            if (expiresIn is string str)
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(str, @"^(\d+)(m|h|d)$");
+                if (!match.Success)
+                    throw new VortexException($"Invalid expiresIn format: \"{str}\". Use \"5m\", \"1h\", \"24h\", \"7d\" or seconds.");
+                var value = int.Parse(match.Groups[1].Value);
+                // Validate value is positive (fixes "0m", "0h", "0d" not being rejected)
+                if (value <= 0)
+                    throw new VortexException($"Invalid expiresIn value: \"{str}\". Must be positive.");
+                // Use checked long arithmetic to prevent overflow
+                var unit = match.Groups[2].Value;
+                long totalSeconds = checked(unit switch
+                {
+                    "m" => (long)value * 60L,
+                    "h" => (long)value * 60L * 60L,
+                    "d" => (long)value * 60L * 60L * 24L,
+                    _ => throw new VortexException($"Unknown time unit: {unit}")
+                });
+                if (totalSeconds > int.MaxValue)
+                    throw new VortexException($"Invalid expiresIn value: \"{str}\". Duration is too large.");
+                return (int)totalSeconds;
+            }
+            throw new VortexException($"expiresIn must be a string or int, but got {expiresIn?.GetType().Name ?? "null"}: {expiresIn}");
+        }
+
+        /// <summary>
+        /// Generate a signed token for use with Vortex widgets
+        /// </summary>
+        /// <param name="payload">Data to sign (user, component, scope, vars, etc.)</param>
+        /// <param name="options">Optional configuration (ExpiresIn)</param>
+        /// <returns>Signed JWT token string</returns>
+        /// <example>
+        /// <code>
+        /// var payload = new GenerateTokenPayload(new TokenUser("user-123"));
+        /// var token = client.GenerateToken(payload);
+        ///
+        /// // With custom expiry
+        /// var options = new GenerateTokenOptions("1h");
+        /// var token = client.GenerateToken(payload, options);
+        /// </code>
+        /// </example>
+        public string GenerateToken(GenerateTokenPayload payload, GenerateTokenOptions? options = null)
+        {
+            // Guard against null payload for clear failure mode
+            if (payload == null)
+                throw new ArgumentNullException(nameof(payload));
+
+            // Warn if user.id is missing
+            if (payload.User == null || string.IsNullOrEmpty(payload.User.Id))
+            {
+                Console.WriteLine("[Vortex SDK] Warning: signing payload without user.id means invitations won't be securely attributed.");
+            }
+
+            // Parse API key
+            var parts = _apiKey.Split('.');
+            if (parts.Length != 3 || parts[0] != "VRTX")
+                throw new VortexException("Invalid API key format");
+
+            var uuidBytes = Base64UrlDecode(parts[1]);
+            if (uuidBytes.Length != 16)
+                throw new VortexException("Invalid API key UUID length");
+            // Convert bytes to UUID string using big-endian byte order (matching Sign() and GenerateJwt())
+            var kid =
+                $"{uuidBytes[0]:x2}{uuidBytes[1]:x2}{uuidBytes[2]:x2}{uuidBytes[3]:x2}-" +
+                $"{uuidBytes[4]:x2}{uuidBytes[5]:x2}-" +
+                $"{uuidBytes[6]:x2}{uuidBytes[7]:x2}-" +
+                $"{uuidBytes[8]:x2}{uuidBytes[9]:x2}-" +
+                $"{uuidBytes[10]:x2}{uuidBytes[11]:x2}{uuidBytes[12]:x2}{uuidBytes[13]:x2}{uuidBytes[14]:x2}{uuidBytes[15]:x2}";
+            var key = parts[2];
+
+            // Derive signing key
+            using var signingHmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
+            var signingKey = signingHmac.ComputeHash(Encoding.UTF8.GetBytes(kid));
+
+            // Parse expiry
+            var expiresInSeconds = 300; // Default 5 minutes
+            if (options?.ExpiresIn != null)
+            {
+                expiresInSeconds = ParseExpiresIn(options.ExpiresIn);
+            }
+
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var exp = now + expiresInSeconds;
+
+            // Build JWT header
+            var header = new Dictionary<string, object>
+            {
+                ["alg"] = "HS256",
+                ["typ"] = "JWT",
+                ["kid"] = kid
+            };
+
+            // Build JWT payload - merge Extra first so typed fields always win
+            var jwtPayload = new Dictionary<string, object>();
+            if (payload.Extra != null)
+            {
+                foreach (var kv in payload.Extra)
+                    jwtPayload[kv.Key] = kv.Value;
+            }
+            if (payload.User != null) jwtPayload["user"] = payload.User;
+            if (payload.Component != null) jwtPayload["component"] = payload.Component;
+            if (payload.Scope != null) jwtPayload["scope"] = payload.Scope;
+            if (payload.Vars != null) jwtPayload["vars"] = payload.Vars;
+            jwtPayload["iat"] = now;
+            jwtPayload["exp"] = exp;
+
+            var jsonOptions = new JsonSerializerOptions
+            {
+                WriteIndented = false,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            };
+
+            var headerB64 = Base64UrlEncode(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(header, jsonOptions)));
+            var payloadB64 = Base64UrlEncode(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(jwtPayload, jsonOptions)));
+
+            var toSign = $"{headerB64}.{payloadB64}";
+            using var mac = new HMACSHA256(signingKey);
+            var signatureBytes = mac.ComputeHash(Encoding.UTF8.GetBytes(toSign));
+            var signatureB64 = Base64UrlEncode(signatureBytes);
+
+            return $"{toSign}.{signatureB64}";
+        }
+
         public string GenerateJwt(Dictionary<string, object> parameters)
         {
             // Extract user from parameters

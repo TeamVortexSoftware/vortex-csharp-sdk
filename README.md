@@ -44,33 +44,6 @@ Your API key is used to:
 
 ## Usage
 
-### Sign user data for use with the Vortex Widget (Alternative to JWT)
-
-Instead of generating a full JWT, you can use the simpler `Sign()` method. This produces an HMAC signature that you pass alongside the `user` prop on your Vortex widget.
-
-```csharp
-using TeamVortexSoftware.VortexSDK;
-using System.Collections.Generic;
-
-var vortex = new VortexClient(Environment.GetEnvironmentVariable("VORTEX_API_KEY"));
-
-// Sign the user data
-var user = new Dictionary<string, object>
-{
-    { "id", "user-123" },
-    { "email", "user@example.com" },
-    { "name", "Jane Doe" }  // Optional
-};
-string signature = vortex.Sign(user);
-
-// Pass both user and signature to your frontend
-// Frontend usage:
-// <VortexInvite
-//   user={{ userId: "user-123", userEmail: "user@example.com", name: "Jane Doe" }}
-//   signature={signature}
-// />
-```
-
 ### Generate a JWT for the Vortex Widget
 
 The Vortex Widget requires a JWT to authenticate users. Here's how to generate one:
@@ -203,6 +176,26 @@ var user = new AcceptUser { Email = "user@example.com" };
 var result = await vortex.AcceptInvitationAsync("invitation-id", user);
 ```
 
+##### Tracking new vs existing users
+
+The `IsExisting` property helps you track whether invitation accepts come from new signups or existing users:
+
+```csharp
+// New user signup
+var newUser = new AcceptUser {
+    Email = "newuser@example.com",
+    IsExisting = false
+};
+var newUserResult = await vortex.AcceptInvitationAsync("inv-123", newUser);
+
+// Existing user accepting an invitation
+var existingUser = new AcceptUser {
+    Email = "existinguser@example.com",
+    IsExisting = true
+};
+var existingUserResult = await vortex.AcceptInvitationAsync("inv-456", existingUser);
+```
+
 #### Get Invitations by Scope
 
 ```csharp
@@ -242,15 +235,15 @@ Console.WriteLine($"Invitation IDs: {string.Join(", ", result.InvitationIds)}");
 
 **Parameters:**
 
-- `creatorId` (string) — The inviter's user ID in your system
-- `targetValue` (string) — The invitee's user ID in your system
-- `action` ("accepted" | "declined") — The invitation decision
-- `componentId` (string) — The widget component UUID
+- `creatorId` (string) - The inviter's user ID in your system
+- `targetValue` (string) - The invitee's user ID in your system
+- `action` ("accepted" | "declined") - The invitation decision
+- `componentId` (string) - The widget component UUID
 
 **Response:**
 
-- `Processed` (int) — Count of invitations processed
-- `InvitationIds` (string[]) — IDs of processed invitations
+- `Processed` (int) - Count of invitations processed
+- `InvitationIds` (string[]) - IDs of processed invitations
 
 **Use cases:**
 
