@@ -85,6 +85,7 @@ namespace TeamVortexSoftware.VortexSDK
         /// </summary>
         /// <param name="user">Dictionary with user data (id, email, etc.)</param>
         /// <returns>Signature string in "kid:hexDigest" format</returns>
+        /// <vortex category="authentication" since="0.5.0"/>
         public string Sign(Dictionary<string, object> user)
         {
             var parts = _apiKey.Split('.');
@@ -172,16 +173,7 @@ namespace TeamVortexSoftware.VortexSDK
         /// <param name="payload">Data to sign (user, component, scope, vars, etc.)</param>
         /// <param name="options">Optional configuration (ExpiresIn)</param>
         /// <returns>Signed JWT token string</returns>
-        /// <example>
-        /// <code>
-        /// var payload = new GenerateTokenPayload(new TokenUser("user-123"));
-        /// var token = client.GenerateToken(payload);
-        ///
-        /// // With custom expiry
-        /// var options = new GenerateTokenOptions("1h");
-        /// var token = client.GenerateToken(payload, options);
-        /// </code>
-        /// </example>
+        /// <vortex category="authentication" since="0.8.0" primary="true"/>
         public string GenerateToken(GenerateTokenPayload payload, GenerateTokenOptions? options = null)
         {
             // Guard against null payload for clear failure mode
@@ -216,7 +208,7 @@ namespace TeamVortexSoftware.VortexSDK
             var signingKey = signingHmac.ComputeHash(Encoding.UTF8.GetBytes(kid));
 
             // Parse expiry
-            var expiresInSeconds = 300; // Default 5 minutes
+            var expiresInSeconds = 2592000; // Default 30 days
             if (options?.ExpiresIn != null)
             {
                 expiresInSeconds = ParseExpiresIn(options.ExpiresIn);
@@ -264,7 +256,7 @@ namespace TeamVortexSoftware.VortexSDK
             return $"{toSign}.{signatureB64}";
         }
 
-        public string GenerateJwt(Dictionary<string, object> parameters)
+        public string GenerateJwt(Dictionary<string, object> parameters, GenerateTokenOptions options = null)
         {
             // Extract user from parameters
             if (parameters == null || !parameters.ContainsKey("user"))
@@ -306,7 +298,8 @@ namespace TeamVortexSoftware.VortexSDK
                      $"{BitConverter.ToString(idBytes, 8, 2).Replace("-", "").ToLower()}-" +
                      $"{BitConverter.ToString(idBytes, 10, 6).Replace("-", "").ToLower()}";
 
-            var expires = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 3600; // 1 hour from now
+            var expiresInSeconds = (options?.ExpiresIn != null) ? ParseExpiresIn(options.ExpiresIn) : 2592000; // 30 days
+            var expires = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + expiresInSeconds;
 
             // Step 1: Derive signing key from API key + ID
             byte[] signingKey;
@@ -393,6 +386,10 @@ namespace TeamVortexSoftware.VortexSDK
         /// <summary>
         /// Get invitations by target (email or sms)
         /// </summary>
+        /// <param name="targetType">Type of target (email, phone)</param>
+        /// <param name="targetValue">The target value</param>
+        /// <returns>List of invitations</returns>
+        /// <vortex category="invitations" since="0.1.0"/>
         public async Task<List<Invitation>> GetInvitationsByTargetAsync(string targetType, string targetValue)
         {
             var queryParams = $"?targetType={Uri.EscapeDataString(targetType)}&targetValue={Uri.EscapeDataString(targetValue)}";
@@ -403,6 +400,9 @@ namespace TeamVortexSoftware.VortexSDK
         /// <summary>
         /// Get a specific invitation by ID
         /// </summary>
+        /// <param name="invitationId">The invitation ID</param>
+        /// <returns>The invitation details</returns>
+        /// <vortex category="invitations" since="0.1.0" primary="true"/>
         public async Task<Invitation> GetInvitationAsync(string invitationId)
         {
             return await ApiRequestAsync<Invitation>(HttpMethod.Get, $"/api/v1/invitations/{invitationId}");
@@ -411,6 +411,8 @@ namespace TeamVortexSoftware.VortexSDK
         /// <summary>
         /// Revoke (delete) an invitation
         /// </summary>
+        /// <param name="invitationId">The invitation ID to revoke</param>
+        /// <vortex category="invitations" since="0.1.0"/>
         public async Task RevokeInvitationAsync(string invitationId)
         {
             await ApiRequestAsync<object>(HttpMethod.Delete, $"/api/v1/invitations/{invitationId}");
@@ -422,6 +424,7 @@ namespace TeamVortexSoftware.VortexSDK
         /// <param name="invitationIds">List of invitation IDs to accept</param>
         /// <param name="user">User with email or phone (and optional name)</param>
         /// <returns>Invitation result</returns>
+        /// <vortex category="invitations" since="0.1.0"/>
         public async Task<Invitation> AcceptInvitationsAsync(List<string> invitationIds, AcceptUser user)
         {
             if (string.IsNullOrEmpty(user.Email) && string.IsNullOrEmpty(user.Phone))
@@ -441,18 +444,10 @@ namespace TeamVortexSoftware.VortexSDK
         /// <summary>
         /// Accept a single invitation (recommended method)
         /// </summary>
-        /// <remarks>
-        /// This is the recommended method for accepting invitations.
-        /// </remarks>
         /// <param name="invitationId">Single invitation ID to accept</param>
         /// <param name="user">User with email or phone (and optional name)</param>
         /// <returns>Invitation result</returns>
-        /// <example>
-        /// <code>
-        /// var user = new AcceptUser { Email = "user@example.com", Name = "John Doe" };
-        /// var result = await client.AcceptInvitationAsync("inv-123", user);
-        /// </code>
-        /// </example>
+        /// <vortex category="invitations" since="0.6.0" primary="true"/>
         public async Task<Invitation> AcceptInvitationAsync(string invitationId, AcceptUser user)
         {
             return await AcceptInvitationsAsync(new List<string> { invitationId }, user);
@@ -515,16 +510,23 @@ namespace TeamVortexSoftware.VortexSDK
         }
 
         /// <summary>
-        /// Delete all invitations for a specific group
+        /// Delete all invitations for a specific scope
         /// </summary>
+        /// <param name="groupType">The scope type (organization, team, etc.)</param>
+        /// <param name="groupId">The scope identifier</param>
+        /// <vortex category="invitations" since="0.4.0"/>
         public async Task DeleteInvitationsByScopeAsync(string groupType, string groupId)
         {
             await ApiRequestAsync<object>(HttpMethod.Delete, $"/api/v1/invitations/by-scope/{groupType}/{groupId}");
         }
 
         /// <summary>
-        /// Get all invitations for a specific group
+        /// Get all invitations for a specific scope
         /// </summary>
+        /// <param name="groupType">The scope type (organization, team, etc.)</param>
+        /// <param name="groupId">The scope identifier</param>
+        /// <returns>List of invitations for the scope</returns>
+        /// <vortex category="invitations" since="0.4.0"/>
         public async Task<List<Invitation>> GetInvitationsByScopeAsync(string groupType, string groupId)
         {
             var response = await ApiRequestAsync<InvitationsResponse>(HttpMethod.Get, $"/api/v1/invitations/by-scope/{groupType}/{groupId}");
@@ -534,6 +536,9 @@ namespace TeamVortexSoftware.VortexSDK
         /// <summary>
         /// Reinvite a user (send invitation again)
         /// </summary>
+        /// <param name="invitationId">The invitation ID to reinvite</param>
+        /// <returns>The reinvited invitation result</returns>
+        /// <vortex category="invitations" since="0.2.0"/>
         public async Task<Invitation> ReinviteAsync(string invitationId)
         {
             return await ApiRequestAsync<Invitation>(HttpMethod.Post, $"/api/v1/invitations/{invitationId}/reinvite");
@@ -611,16 +616,8 @@ namespace TeamVortexSoftware.VortexSDK
         /// </summary>
         /// <param name="scopeType">The type of scope (e.g., "organization", "team", "project")</param>
         /// <param name="scope">The scope identifier (customer's group ID)</param>
-        /// <returns>AutojoinDomainsResponse with autojoin domains and associated invitation</returns>
-        /// <example>
-        /// <code>
-        /// var response = await client.GetAutojoinDomainsAsync("organization", "acme-org");
-        /// foreach (var domain in response.AutojoinDomains)
-        /// {
-        ///     Console.WriteLine($"Domain: {domain.Domain}");
-        /// }
-        /// </code>
-        /// </example>
+        /// <returns>AutojoinDomainsResponse with autojoin domains and invitation</returns>
+        /// <vortex category="autojoin" since="0.6.0"/>
         public async Task<AutojoinDomainsResponse> GetAutojoinDomainsAsync(string scopeType, string scope)
         {
             var encodedScopeType = Uri.EscapeDataString(scopeType);
@@ -629,25 +626,11 @@ namespace TeamVortexSoftware.VortexSDK
         }
 
         /// <summary>
-        /// Configure autojoin domains for a specific scope.
-        /// This endpoint syncs autojoin domains - it will add new domains, remove domains
-        /// not in the provided list, and deactivate the autojoin invitation if all domains
-        /// are removed (empty array).
+        /// Configure autojoin domains for a specific scope
         /// </summary>
         /// <param name="request">The configure autojoin request</param>
-        /// <returns>AutojoinDomainsResponse with updated autojoin domains and associated invitation</returns>
-        /// <example>
-        /// <code>
-        /// var request = new ConfigureAutojoinRequest(
-        ///     "acme-org",
-        ///     "organization",
-        ///     new List&lt;string&gt; { "acme.com", "acme.org" },
-        ///     "widget-123"
-        /// );
-        /// request.ScopeName = "Acme Corporation";
-        /// var response = await client.ConfigureAutojoinAsync(request);
-        /// </code>
-        /// </example>
+        /// <returns>AutojoinDomainsResponse with updated autojoin domains</returns>
+        /// <vortex category="autojoin" since="0.6.0"/>
         public async Task<AutojoinDomainsResponse> ConfigureAutojoinAsync(ConfigureAutojoinRequest request)
         {
             if (request == null)
@@ -656,8 +639,8 @@ namespace TeamVortexSoftware.VortexSDK
                 throw new VortexException("scope is required");
             if (string.IsNullOrEmpty(request.ScopeType))
                 throw new VortexException("scopeType is required");
-            if (string.IsNullOrEmpty(request.WidgetId))
-                throw new VortexException("widgetId is required");
+            if (string.IsNullOrEmpty(request.ComponentId))
+                throw new VortexException("componentId is required");
 
             return await ApiRequestAsync<AutojoinDomainsResponse>(HttpMethod.Post, "/api/v1/invitations/autojoin", request);
         }

@@ -75,24 +75,26 @@ namespace TeamVortexSoftware.VortexSDK
     // ============================================================================
 
     /// <summary>
-    /// User data for JWT generation
-    /// Requires both id and email
-    /// Optional fields: Name (max 200 chars), AvatarUrl (HTTPS URL, max 2000 chars), adminScopes, allowedEmailDomains
+    /// User data for JWT generation - represents the authenticated user sending invitations.
+    /// Only Id is required. Email is optional but recommended for invitation attribution.
     /// </summary>
     public class User
     {
+        /// <summary>Your internal user ID (required for invitation attribution)</summary>
         [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
+        /// <summary>User's email address (optional, used for reply-to in invitation emails)</summary>
         [JsonPropertyName("email")]
-        public string Email { get; set; } = string.Empty;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Email { get; set; }
 
-        /// <summary>User's display name (preferred)</summary>
+        /// <summary>Display name shown to recipients (e.g., "John invited you")</summary>
         [JsonPropertyName("name")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }
 
-        /// <summary>User's avatar URL (preferred)</summary>
+        /// <summary>Avatar URL displayed in invitation emails and widgets (must be HTTPS)</summary>
         [JsonPropertyName("avatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? AvatarUrl { get; set; }
@@ -109,20 +111,36 @@ namespace TeamVortexSoftware.VortexSDK
         [Obsolete("Use AvatarUrl instead")]
         public string? UserAvatarUrl { get; set; }
 
+        /// <summary>List of scopes where user has admin privileges (e.g., ["autojoin"])</summary>
         [JsonPropertyName("adminScopes")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AdminScopes { get; set; }
 
-        /// <summary>
-        /// Optional list of allowed email domains for invitation restrictions (e.g., ["acme.com", "acme.org"])
-        /// </summary>
+        /// <summary>Restrict invitations to these email domains (e.g., ["acme.com"])</summary>
         [JsonPropertyName("allowedEmailDomains")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AllowedEmailDomains { get; set; }
 
         public User() { }
 
-        public User(string id, string email, List<string>? adminScopes = null, string? name = null, string? avatarUrl = null)
+        /// <summary>
+        /// Create a new User with only the required id field
+        /// </summary>
+        /// <param name="id">User's unique identifier in your system</param>
+        public User(string id)
+        {
+            Id = id;
+        }
+
+        /// <summary>
+        /// Create a new User with id and optional email
+        /// </summary>
+        /// <param name="id">User's unique identifier in your system</param>
+        /// <param name="email">User's email address (optional but recommended for reply-to)</param>
+        /// <param name="adminScopes">List of admin scopes (e.g., ["autojoin"])</param>
+        /// <param name="name">User's display name</param>
+        /// <param name="avatarUrl">User's avatar URL</param>
+        public User(string id, string? email = null, List<string>? adminScopes = null, string? name = null, string? avatarUrl = null)
         {
             Id = id;
             Email = email;
@@ -133,30 +151,26 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// User data for accepting invitations
-    /// Requires either email or phone (or both)
+    /// User data for accepting invitations - identifies who accepted the invitation
     /// </summary>
     public class AcceptUser
     {
+        /// <summary>Email address of the user accepting. At least one of Email or Phone is required.</summary>
         [JsonPropertyName("email")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Email { get; set; }
 
+        /// <summary>Phone number with country code (e.g., "+15551234567"). At least one of Email or Phone is required.</summary>
         [JsonPropertyName("phone")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Phone { get; set; }
 
+        /// <summary>Display name of the accepting user (shown in notifications to inviter)</summary>
         [JsonPropertyName("name")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }
 
-        /// <summary>
-        /// Whether the accepting user is an existing user in your system.
-        /// Set to true if the user was already registered before accepting the invitation.
-        /// Set to false if this is a new user signup.
-        /// Leave as null if unknown.
-        /// Used for analytics to track new vs existing user conversions.
-        /// </summary>
+        /// <summary>Whether user was already registered. true=existing, false=new signup, null=unknown. Used for conversion analytics.</summary>
         [JsonPropertyName("isExisting")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public bool? IsExisting { get; set; }
@@ -173,13 +187,15 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// Identifier for a user (email, sms, etc.)
+    /// Identifier for a user - used in JWT generation to link user across channels
     /// </summary>
     public class Identifier
     {
+        /// <summary>Identifier type: "email", "phone", "username", or custom type</summary>
         [JsonPropertyName("type")]
         public string Type { get; set; } = string.Empty;
 
+        /// <summary>The identifier value (email address, phone number, etc.)</summary>
         [JsonPropertyName("value")]
         public string Value { get; set; } = string.Empty;
 
@@ -193,22 +209,25 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// Group information for JWT generation (input)
-    /// Supports both 'id' (legacy) and 'groupId' (preferred) for backward compatibility
+    /// Scope/group for JWT generation - defines user's team/org membership in tokens
     /// </summary>
     public class Group
     {
+        /// <summary>Scope type (e.g., "team", "organization", "workspace")</summary>
         [JsonPropertyName("type")]
         public string Type { get; set; } = string.Empty;
 
+        /// <summary>Legacy scope identifier. Use Scope/groupId instead.</summary>
         [JsonPropertyName("id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Id { get; set; }
 
+        /// <summary>Your internal scope/group identifier (preferred)</summary>
         [JsonPropertyName("groupId")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Scope { get; set; }
 
+        /// <summary>Display name for the scope (e.g., "Engineering Team")</summary>
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
@@ -275,26 +294,24 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// Invitation target (email, phone, share, internal)
+    /// Represents the target recipient of an invitation
     /// </summary>
     public class InvitationTarget
     {
+        /// <summary>Delivery channel: email, phone, share (link), or internal (in-app)</summary>
         [JsonPropertyName("type")]
         public InvitationTargetType Type { get; set; }
 
+        /// <summary>Target address: email, phone number with country code, or share link ID</summary>
         [JsonPropertyName("value")]
         public string Value { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Display name of the person being invited
-        /// </summary>
+        /// <summary>Display name of the recipient (e.g., "John Doe")</summary>
         [JsonPropertyName("name")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }
 
-        /// <summary>
-        /// Avatar URL for the person being invited (for display in invitation lists)
-        /// </summary>
+        /// <summary>Avatar URL for the recipient, shown in invitation lists and widgets</summary>
         [JsonPropertyName("avatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? AvatarUrl { get; set; }
@@ -320,85 +337,106 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// Invitation acceptance information
+    /// Record of an invitation being accepted
     /// </summary>
     public class InvitationAcceptance
     {
+        /// <summary>Unique identifier for this acceptance record</summary>
         [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
+        /// <summary>Your Vortex account ID</summary>
         [JsonPropertyName("accountId")]
         public string AccountId { get; set; } = string.Empty;
 
-        [JsonPropertyName("projectId")]
-        public string ProjectId { get; set; } = string.Empty;
-
+        /// <summary>ISO 8601 timestamp when the invitation was accepted</summary>
         [JsonPropertyName("acceptedAt")]
         public string AcceptedAt { get; set; } = string.Empty;
 
+        /// <summary>The target that accepted the invitation</summary>
         [JsonPropertyName("target")]
         public InvitationTarget? Target { get; set; }
     }
 
     /// <summary>
-    /// Full invitation details
+    /// Complete invitation details as returned by the Vortex API
     /// </summary>
     public class Invitation
     {
+        /// <summary>Unique identifier for this invitation</summary>
         [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
+        /// <summary>Your Vortex account ID</summary>
         [JsonPropertyName("accountId")]
         public string AccountId { get; set; } = string.Empty;
 
+        /// <summary>Number of times the invitation link was clicked</summary>
         [JsonPropertyName("clickThroughs")]
         public int ClickThroughs { get; set; }
 
+        /// <summary>Invitation form data submitted by the user, including email addresses of invitees and the values of any custom fields.</summary>
+        [JsonPropertyName("formSubmissionData")]
+        public Dictionary<string, object>? FormSubmissionData { get; set; }
+
+        /// <summary>Deprecated: Use FormSubmissionData instead. Contains the same data.</summary>
+        [Obsolete("Use FormSubmissionData instead")]
         [JsonPropertyName("configurationAttributes")]
         public Dictionary<string, object>? ConfigurationAttributes { get; set; }
 
+        /// <summary>Custom attributes attached to this invitation</summary>
         [JsonPropertyName("attributes")]
         public Dictionary<string, object>? Attributes { get; set; }
 
+        /// <summary>ISO 8601 timestamp when the invitation was created</summary>
         [JsonPropertyName("createdAt")]
         public string CreatedAt { get; set; } = string.Empty;
 
+        /// <summary>Whether this invitation has been revoked or expired</summary>
         [JsonPropertyName("deactivated")]
         public bool Deactivated { get; set; }
 
+        /// <summary>Number of times the invitation was sent (including reminders)</summary>
         [JsonPropertyName("deliveryCount")]
         public int DeliveryCount { get; set; }
 
+        /// <summary>Channels used to deliver this invitation (email, sms, share link)</summary>
         [JsonPropertyName("deliveryTypes")]
         public List<DeliveryType> DeliveryTypes { get; set; } = new();
 
+        /// <summary>Your internal user ID for the person who created this invitation</summary>
         [JsonPropertyName("foreignCreatorId")]
         public string ForeignCreatorId { get; set; } = string.Empty;
 
+        /// <summary>Type of invitation: single_use (1:1), multi_use (1:many), or autojoin</summary>
         [JsonPropertyName("invitationType")]
         public InvitationType InvitationType { get; set; }
 
+        /// <summary>ISO 8601 timestamp of last modification</summary>
         [JsonPropertyName("modifiedAt")]
         public string? ModifiedAt { get; set; }
 
+        /// <summary>Current status: queued, sending, sent, delivered, accepted, shared, unfurled</summary>
         [JsonPropertyName("status")]
         public InvitationStatus Status { get; set; }
 
+        /// <summary>List of invitation recipients with their contact info and status</summary>
         [JsonPropertyName("target")]
         public List<InvitationTarget> Target { get; set; } = new();
 
+        /// <summary>Number of times the invitation page was viewed</summary>
         [JsonPropertyName("views")]
         public int Views { get; set; }
 
+        /// <summary>Widget configuration ID used for this invitation</summary>
         [JsonPropertyName("widgetConfigurationId")]
         public string WidgetConfigurationId { get; set; } = string.Empty;
 
+        /// <summary>Deployment ID this invitation belongs to</summary>
         [JsonPropertyName("deploymentId")]
         public string DeploymentId { get; set; } = string.Empty;
 
-        [JsonPropertyName("projectId")]
-        public string ProjectId { get; set; } = string.Empty;
-
+        /// <summary>Scopes (teams/orgs) this invitation grants access to</summary>
         [JsonPropertyName("groups")]
         public List<InvitationScope> Groups { get; set; } = new();
 
@@ -410,39 +448,47 @@ namespace TeamVortexSoftware.VortexSDK
             set => Groups = value;
         }
 
+        /// <summary>List of acceptance records if the invitation was accepted (optional)</summary>
         [JsonPropertyName("accepts")]
-        public List<InvitationAcceptance> Accepts { get; set; } = new();
+        public List<InvitationAcceptance>? Accepts { get; set; }
 
+        /// <summary>Primary scope identifier (e.g., "team-123")</summary>
         [JsonPropertyName("scope")]
         public string? Scope { get; set; }
 
+        /// <summary>Type of the primary scope (e.g., "team", "organization")</summary>
         [JsonPropertyName("scopeType")]
         public string? ScopeType { get; set; }
 
+        /// <summary>Whether this invitation has passed its expiration date</summary>
         [JsonPropertyName("expired")]
         public bool Expired { get; set; }
 
+        /// <summary>ISO 8601 timestamp when this invitation expires</summary>
         [JsonPropertyName("expires")]
         public string? Expires { get; set; }
 
+        /// <summary>Custom metadata attached to this invitation</summary>
         [JsonPropertyName("metadata")]
         public Dictionary<string, object>? Metadata { get; set; }
 
+        /// <summary>Pass-through data returned unchanged in webhooks and callbacks</summary>
         [JsonPropertyName("passThrough")]
         public string? PassThrough { get; set; }
 
+        /// <summary>Source identifier for tracking (e.g., "ios-app", "web-dashboard")</summary>
         [JsonPropertyName("source")]
         public string? Source { get; set; }
 
-        /// <summary>
-        /// Customer-defined subtype for analytics segmentation (e.g., "pymk", "find-friends")
-        /// </summary>
+        /// <summary>Subtype for analytics segmentation (e.g., "pymk", "find-friends")</summary>
         [JsonPropertyName("subtype")]
         public string? Subtype { get; set; }
 
+        /// <summary>Display name of the user who created this invitation</summary>
         [JsonPropertyName("creatorName")]
         public string? CreatorName { get; set; }
 
+        /// <summary>Avatar URL of the user who created this invitation</summary>
         [JsonPropertyName("creatorAvatarUrl")]
         public string? CreatorAvatarUrl { get; set; }
     }
@@ -459,29 +505,24 @@ namespace TeamVortexSoftware.VortexSDK
     // --- Types for creating invitations via backend API ---
 
     /// <summary>
-    /// Target for creating an invitation
+    /// Target recipient when creating an invitation
     /// </summary>
     public class CreateInvitationTarget
     {
+        /// <summary>Delivery channel: email, phone, or internal (in-app)</summary>
         [JsonPropertyName("type")]
         public CreateInvitationTargetTypeEnum Type { get; set; }
 
-        /// <summary>
-        /// Target value: email address, phone number, or internal user ID
-        /// </summary>
+        /// <summary>Target address: email, phone number (with country code), or internal user ID</summary>
         [JsonPropertyName("value")]
         public string Value { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Display name of the person being invited
-        /// </summary>
+        /// <summary>Display name of the recipient (shown in invitation emails and UI)</summary>
         [JsonPropertyName("name")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }
 
-        /// <summary>
-        /// Avatar URL for the person being invited (for display in invitation lists)
-        /// </summary>
+        /// <summary>Avatar URL for the recipient (displayed in invitation lists)</summary>
         [JsonPropertyName("avatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? AvatarUrl { get; set; }
@@ -508,33 +549,25 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// Information about the user creating the invitation (the inviter)
+    /// Information about the user sending the invitation - used for attribution and display
     /// </summary>
     public class Inviter
     {
-        /// <summary>
-        /// Required: Your internal user ID for the inviter
-        /// </summary>
+        /// <summary>Your internal user ID for the inviter (required for attribution)</summary>
         [JsonPropertyName("userId")]
         public string UserId { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Optional: Email of the inviter
-        /// </summary>
+        /// <summary>Inviter's email address (used for reply-to and identification)</summary>
         [JsonPropertyName("userEmail")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? UserEmail { get; set; }
 
-        /// <summary>
-        /// Optional: Display name of the inviter (preferred)
-        /// </summary>
+        /// <summary>Display name shown to recipients (e.g., "John invited you to...")</summary>
         [JsonPropertyName("name")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }
 
-        /// <summary>
-        /// Optional: Avatar URL of the inviter (preferred)
-        /// </summary>
+        /// <summary>Avatar URL displayed in invitation emails and widgets</summary>
         [JsonPropertyName("avatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? AvatarUrl { get; set; }
@@ -785,13 +818,15 @@ namespace TeamVortexSoftware.VortexSDK
     // --- Types for autojoin domain management ---
 
     /// <summary>
-    /// Represents an autojoin domain configuration
+    /// Autojoin domain - users with matching email domains automatically join the scope
     /// </summary>
     public class AutojoinDomain
     {
+        /// <summary>Unique identifier for this autojoin configuration</summary>
         [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
+        /// <summary>Email domain that triggers autojoin (e.g., "acme.com")</summary>
         [JsonPropertyName("domain")]
         public string Domain { get; set; } = string.Empty;
 
@@ -834,8 +869,8 @@ namespace TeamVortexSoftware.VortexSDK
         [JsonPropertyName("domains")]
         public List<string> Domains { get; set; } = new();
 
-        [JsonPropertyName("widgetId")]
-        public string WidgetId { get; set; } = string.Empty;
+        [JsonPropertyName("componentId")]
+        public string ComponentId { get; set; } = string.Empty;
 
         [JsonPropertyName("metadata")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -843,42 +878,43 @@ namespace TeamVortexSoftware.VortexSDK
 
         public ConfigureAutojoinRequest() { }
 
-        public ConfigureAutojoinRequest(string scope, string scopeType, List<string> domains, string widgetId)
+        public ConfigureAutojoinRequest(string scope, string scopeType, List<string> domains, string componentId)
         {
             Scope = scope;
             ScopeType = scopeType;
             Domains = domains;
-            WidgetId = widgetId;
+            ComponentId = componentId;
         }
     }
 
     // ─── GenerateToken types ────────────────────────────────────
 
     /// <summary>
-    /// User data for GenerateToken
+    /// User data for GenerateToken - represents the authenticated user sending invitations
     /// </summary>
     public class TokenUser
     {
-        /// <summary>
-        /// User ID. Nullable to support the "missing id" case (SDK will warn but allow it).
-        /// When null or empty, the field is omitted from JSON.
-        /// </summary>
+        /// <summary>Unique identifier for the user in your system. Used to attribute invitations and track referral chains.</summary>
         [JsonPropertyName("id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string? Id { get; set; }
 
+        /// <summary>Display name shown to invitation recipients (e.g., "John invited you")</summary>
         [JsonPropertyName("name")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }
 
+        /// <summary>User's email address. Used for reply-to in invitation emails.</summary>
         [JsonPropertyName("email")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Email { get; set; }
 
+        /// <summary>URL to user's avatar image. Displayed in invitation emails and widgets.</summary>
         [JsonPropertyName("avatarUrl")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? AvatarUrl { get; set; }
 
+        /// <summary>List of scope IDs where this user has admin privileges (e.g., ["team:team-123"])</summary>
         [JsonPropertyName("adminScopes")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AdminScopes { get; set; }
@@ -899,26 +935,31 @@ namespace TeamVortexSoftware.VortexSDK
     }
 
     /// <summary>
-    /// Payload for GenerateToken
+    /// Payload for GenerateToken - used to generate secure tokens for Vortex components
     /// </summary>
     public class GenerateTokenPayload
     {
+        /// <summary>The authenticated user who will be using the Vortex component</summary>
         [JsonPropertyName("user")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public TokenUser? User { get; set; }
 
+        /// <summary>Component ID to generate token for (from your Vortex dashboard)</summary>
         [JsonPropertyName("component")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Component { get; set; }
 
+        /// <summary>Scope identifier to restrict invitations to a specific team/org (format: "scopeType:scopeId")</summary>
         [JsonPropertyName("scope")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Scope { get; set; }
 
+        /// <summary>Custom variables to pass to the component for template rendering</summary>
         [JsonPropertyName("vars")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, object>? Vars { get; set; }
 
+        /// <summary>Additional properties for forward compatibility</summary>
         [JsonExtensionData]
         public Dictionary<string, object>? Extra { get; set; }
 
@@ -937,7 +978,7 @@ namespace TeamVortexSoftware.VortexSDK
     {
         /// <summary>
         /// Token expiry. String format like "5m", "1h", "24h", "7d" or integer seconds.
-        /// Default: 5 minutes (300 seconds).
+        /// Default: 30 days.
         /// </summary>
         public object? ExpiresIn { get; set; }
 
