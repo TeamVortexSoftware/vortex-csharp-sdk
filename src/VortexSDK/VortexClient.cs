@@ -53,33 +53,41 @@ namespace TeamVortexSoftware.VortexSDK
         /// </summary>
         /// <param name="parameters">Dictionary containing "user" key with User object and optional additional properties</param>
         /// <returns>JWT token string</returns>
-        /// <example>
-        /// <code>
-        /// // Simple usage:
-        /// var user = new User
-        /// {
-        ///     Id = "user-123",
-        ///     Email = "user@example.com",
-        ///     Name = "Jane Doe",                                      // Optional: user's display name
-        ///     AvatarUrl = "https://example.com/avatars/jane.jpg",    // Optional: user's avatar URL
-        ///     AdminScopes = new List&lt;string&gt; { "autojoin" }         // Optional: grants admin privileges
-        /// };
-        /// var parameters1 = new Dictionary&lt;string, object&gt;
-        /// {
-        ///     ["user"] = user
-        /// };
-        /// var jwt = vortex.GenerateJwt(parameters1);
-        ///
-        /// // With additional properties:
-        /// var parameters2 = new Dictionary&lt;string, object&gt;
-        /// {
-        ///     ["user"] = new User("user-123", "user@example.com"),
-        ///     ["role"] = "admin",
-        ///     ["department"] = "Engineering"
-        /// };
-        /// var jwt = vortex.GenerateJwt(parameters2);
-        /// </code>
-        /// </example>
+        /// <summary>
+        /// Parse API key and extract kid (UUID) and key components.
+        /// </summary>
+        /// <returns>Tuple of (kid, key)</returns>
+        /// <exception cref="VortexException">Thrown when API key format is invalid</exception>
+        private (string kid, string key) ParseApiKey()
+        {
+            var parts = _apiKey.Split('.');
+            if (parts.Length != 3 || parts[0] != "VRTX")
+                throw new VortexException("Invalid API key format");
+
+            byte[] uuidBytes;
+            try
+            {
+                uuidBytes = Base64UrlDecode(parts[1]);
+            }
+            catch (FormatException)
+            {
+                throw new VortexException("Invalid API key: failed to decode base64 UUID");
+            }
+            if (uuidBytes.Length != 16)
+                throw new VortexException("Invalid API key UUID length");
+            
+            // Convert bytes to UUID string format (big-endian byte order)
+            var kid =
+                $"{uuidBytes[0]:x2}{uuidBytes[1]:x2}{uuidBytes[2]:x2}{uuidBytes[3]:x2}-" +
+                $"{uuidBytes[4]:x2}{uuidBytes[5]:x2}-" +
+                $"{uuidBytes[6]:x2}{uuidBytes[7]:x2}-" +
+                $"{uuidBytes[8]:x2}{uuidBytes[9]:x2}-" +
+                $"{uuidBytes[10]:x2}{uuidBytes[11]:x2}{uuidBytes[12]:x2}{uuidBytes[13]:x2}{uuidBytes[14]:x2}{uuidBytes[15]:x2}";
+            var key = parts[2];
+            
+            return (kid, key);
+        }
+
         /// <summary>
         /// Sign a user object for use with the widget signature prop.
         /// </summary>
@@ -88,20 +96,7 @@ namespace TeamVortexSoftware.VortexSDK
         /// <vortex category="authentication" since="0.5.0"/>
         public string Sign(Dictionary<string, object> user)
         {
-            var parts = _apiKey.Split('.');
-            if (parts.Length != 3 || parts[0] != "VRTX")
-                throw new VortexException("Invalid API key format");
-
-            var uuidBytes = Convert.FromBase64String(parts[1].Replace('-', '+').Replace('_', '/').PadRight((parts[1].Length + 3) & ~3, '='));
-            if (uuidBytes.Length != 16)
-                throw new VortexException("Invalid API key UUID length");
-            var kid =
-                $"{uuidBytes[0]:x2}{uuidBytes[1]:x2}{uuidBytes[2]:x2}{uuidBytes[3]:x2}-" +
-                $"{uuidBytes[4]:x2}{uuidBytes[5]:x2}-" +
-                $"{uuidBytes[6]:x2}{uuidBytes[7]:x2}-" +
-                $"{uuidBytes[8]:x2}{uuidBytes[9]:x2}-" +
-                $"{uuidBytes[10]:x2}{uuidBytes[11]:x2}{uuidBytes[12]:x2}{uuidBytes[13]:x2}{uuidBytes[14]:x2}{uuidBytes[15]:x2}";
-            var key = parts[2];
+            var (kid, key) = ParseApiKey();
 
             // Derive signing key
             using var signingHmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
@@ -187,21 +182,7 @@ namespace TeamVortexSoftware.VortexSDK
             }
 
             // Parse API key
-            var parts = _apiKey.Split('.');
-            if (parts.Length != 3 || parts[0] != "VRTX")
-                throw new VortexException("Invalid API key format");
-
-            var uuidBytes = Base64UrlDecode(parts[1]);
-            if (uuidBytes.Length != 16)
-                throw new VortexException("Invalid API key UUID length");
-            // Convert bytes to UUID string using big-endian byte order (matching Sign() and GenerateJwt())
-            var kid =
-                $"{uuidBytes[0]:x2}{uuidBytes[1]:x2}{uuidBytes[2]:x2}{uuidBytes[3]:x2}-" +
-                $"{uuidBytes[4]:x2}{uuidBytes[5]:x2}-" +
-                $"{uuidBytes[6]:x2}{uuidBytes[7]:x2}-" +
-                $"{uuidBytes[8]:x2}{uuidBytes[9]:x2}-" +
-                $"{uuidBytes[10]:x2}{uuidBytes[11]:x2}{uuidBytes[12]:x2}{uuidBytes[13]:x2}{uuidBytes[14]:x2}{uuidBytes[15]:x2}";
-            var key = parts[2];
+            var (kid, key) = ParseApiKey();
 
             // Derive signing key
             using var signingHmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
@@ -269,34 +250,8 @@ namespace TeamVortexSoftware.VortexSDK
                 throw new VortexException("'user' must be a User object");
             }
 
-            // Parse API key: format is VRTX.base64encodedId.key
-            var parts = _apiKey.Split('.');
-            if (parts.Length != 3)
-            {
-                throw new VortexException("Invalid API key format");
-            }
-
-            var prefix = parts[0];
-            var encodedId = parts[1];
-            var key = parts[2];
-
-            if (prefix != "VRTX")
-            {
-                throw new VortexException("Invalid API key prefix");
-            }
-
-            // Decode the UUID from base64url
-            var idBytes = Base64UrlDecode(encodedId);
-            if (idBytes.Length != 16)
-            {
-                throw new VortexException("Invalid UUID byte length");
-            }
-            // Convert bytes to UUID string (big-endian byte order, matching Node.js)
-            var id = $"{BitConverter.ToString(idBytes, 0, 4).Replace("-", "").ToLower()}-" +
-                     $"{BitConverter.ToString(idBytes, 4, 2).Replace("-", "").ToLower()}-" +
-                     $"{BitConverter.ToString(idBytes, 6, 2).Replace("-", "").ToLower()}-" +
-                     $"{BitConverter.ToString(idBytes, 8, 2).Replace("-", "").ToLower()}-" +
-                     $"{BitConverter.ToString(idBytes, 10, 6).Replace("-", "").ToLower()}";
+            // Parse API key
+            var (id, key) = ParseApiKey();
 
             var expiresInSeconds = (options?.ExpiresIn != null) ? ParseExpiresIn(options.ExpiresIn) : 2592000; // 30 days
             var expires = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + expiresInSeconds;

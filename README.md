@@ -558,7 +558,7 @@ Complete invitation details as returned by the Vortex API
 | `id`                      | `string`                      | ✓        | Unique identifier for this invitation                                                                                  |
 | `accountId`               | `string`                      |          | Your Vortex account ID                                                                                                 |
 | `clickThroughs`           | `int`                         |          | Number of times the invitation link was clicked                                                                        |
-| `formSubmissionData`      | `Dictionary<string, object>?` |          | Invitation form data submitted by the user, including invitee identifiers (such as email addresses, phone numbers, or internal IDs) and the values of any custom fields. |
+| `formSubmissionData`      | `Dictionary<string, object>?` |          | Invitation form data submitted by the user, including email addresses of invitees and the values of any custom fields. |
 | `configurationAttributes` | `Dictionary<string, object>?` |          |                                                                                                                        |
 | `attributes`              | `Dictionary<string, object>?` |          | Custom attributes attached to this invitation                                                                          |
 | `createdAt`               | `string`                      |          | ISO 8601 timestamp when the invitation was created                                                                     |
